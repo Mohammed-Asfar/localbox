@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/* Custom dark theme for the app */
+:root {
+  --color-primary: #0ea5e9;
+  --color-primary-light: #38bdf8;
+  --color-dark-950: #020617;
+  --color-dark-900: #0f172a;
+  --color-dark-800: #1e293b;
+  --color-dark-700: #334155;
+  --color-dark-600: #475569;
+  --color-dark-500: #64748b;
+  --color-dark-400: #94a3b8;
+  --color-dark-300: #cbd5e1;
+  --color-dark-200: #e2e8f0;
+  --color-dark-100: #f1f5f9;
+}
+
+body {
+  background-color: var(--color-dark-950);
+  color: var(--color-dark-100);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-dark-800);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dark-600);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-500);
+}
+
+/* Uppy Dashboard dark theme overrides */
+.uppy-Dashboard-inner {
+  background: var(--color-dark-800) !important;
+  border-color: var(--color-dark-700) !important;
+}
+
+.uppy-Dashboard-AddFiles {
+  border-color: var(--color-dark-600) !important;
+}
+
+.uppy-Dashboard-AddFiles-title {
+  color: var(--color-dark-200) !important;
+}
+
+.uppy-Dashboard-note {
+  color: var(--color-dark-400) !important;
+}
+
+.uppy-DashboardTab-name {
+  color: var(--color-dark-300) !important;
+}
+
+.uppy-StatusBar {
+  background: var(--color-dark-900) !important;
+}
+
+.uppy-StatusBar-content {
+  color: var(--color-dark-200) !important;
+}
+
+.uppy-StatusBar-actionBtn--upload {
+  background: var(--color-primary) !important;
+}
+
+.uppy-Dashboard-Item {
+  background: var(--color-dark-700) !important;
+  border-color: var(--color-dark-600) !important;
+}
+
+.uppy-Dashboard-Item-name {
+  color: var(--color-dark-100) !important;
+}
+
+.uppy-Dashboard-Item-statusSize {
+  color: var(--color-dark-400) !important;
+}
