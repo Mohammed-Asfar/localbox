@@ -3,6 +3,13 @@
  * Uses Uppy with TUS plugin for resumable uploads
  */
 
+// Speed tracking variables
+let lastBytesUploaded = 0;
+let lastTimestamp = Date.now();
+let currentSpeed = 0;
+let speedHistory = [];
+const SPEED_HISTORY_SIZE = 5; // Average over last 5 readings for smoother display
+
 // Initialize Uppy with Dashboard and Tus plugins
 const uppy = new Uppy.Uppy({
     debug: true,
@@ -46,12 +53,43 @@ const uppy = new Uppy.Uppy({
 // Event: Upload started
 uppy.on('upload', () => {
     console.log('📤 Upload started');
+    // Reset speed tracking
+    lastBytesUploaded = 0;
+    lastTimestamp = Date.now();
+    currentSpeed = 0;
+    speedHistory = [];
+    showSpeedDisplay();
 });
 
 // Event: Upload progress
 uppy.on('upload-progress', (file, progress) => {
     const percent = Math.round((progress.bytesUploaded / progress.bytesTotal) * 100);
-    console.log(`📊 ${file.name}: ${percent}%`);
+
+    // Calculate upload speed
+    const now = Date.now();
+    const timeDiff = (now - lastTimestamp) / 1000; // seconds
+
+    if (timeDiff >= 0.5) { // Update every 500ms
+        const bytesDiff = progress.bytesUploaded - lastBytesUploaded;
+        const instantSpeed = bytesDiff / timeDiff; // bytes per second
+
+        // Add to history for smoothing
+        speedHistory.push(instantSpeed);
+        if (speedHistory.length > SPEED_HISTORY_SIZE) {
+            speedHistory.shift();
+        }
+
+        // Calculate average speed
+        currentSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+
+        lastBytesUploaded = progress.bytesUploaded;
+        lastTimestamp = now;
+
+        // Update speed display
+        updateSpeedDisplay(currentSpeed, progress.bytesTotal - progress.bytesUploaded);
+    }
+
+    console.log(`📊 ${file.name}: ${percent}% @ ${formatSpeed(currentSpeed)}`);
 });
 
 // Event: Single file upload complete
@@ -63,6 +101,7 @@ uppy.on('upload-success', (file, response) => {
 // Event: All uploads complete
 uppy.on('complete', (result) => {
     console.log('🎉 All uploads complete:', result.successful.length, 'files');
+    hideSpeedDisplay();
 
     if (result.successful.length > 0) {
         // Refresh file list after uploads complete
@@ -151,6 +190,81 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+/**
+ * Format speed to human readable (bytes/s to KB/s, MB/s, etc.)
+ */
+function formatSpeed(bytesPerSecond) {
+    if (bytesPerSecond === 0) return '0 B/s';
+    const k = 1024;
+    const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+    const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+    return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Format time remaining
+ */
+function formatETA(seconds) {
+    if (!isFinite(seconds) || seconds <= 0) return '--';
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+/**
+ * Show speed display element
+ */
+function showSpeedDisplay() {
+    let speedEl = document.getElementById('upload-speed-display');
+    if (!speedEl) {
+        speedEl = document.createElement('div');
+        speedEl.id = 'upload-speed-display';
+        speedEl.className = 'fixed top-20 right-4 bg-dark-800 border border-dark-600 rounded-xl px-4 py-3 shadow-2xl z-50 min-w-[200px]';
+        speedEl.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
+                <div>
+                    <div class="text-sm text-dark-400">Upload Speed</div>
+                    <div class="text-lg font-bold text-primary-400" id="speed-value">Calculating...</div>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-dark-700 flex justify-between text-sm">
+                <span class="text-dark-400">ETA:</span>
+                <span class="text-dark-200" id="eta-value">--</span>
+            </div>
+        `;
+        document.body.appendChild(speedEl);
+    }
+    speedEl.style.display = 'block';
+}
+
+/**
+ * Hide speed display element
+ */
+function hideSpeedDisplay() {
+    const speedEl = document.getElementById('upload-speed-display');
+    if (speedEl) {
+        speedEl.style.display = 'none';
+    }
+}
+
+/**
+ * Update speed display with current values
+ */
+function updateSpeedDisplay(speed, remainingBytes) {
+    const speedValueEl = document.getElementById('speed-value');
+    const etaValueEl = document.getElementById('eta-value');
+
+    if (speedValueEl) {
+        speedValueEl.textContent = formatSpeed(speed);
+    }
+    if (etaValueEl && speed > 0) {
+        const etaSeconds = remainingBytes / speed;
+        etaValueEl.textContent = formatETA(etaSeconds);
+    }
+}
+
 // Make formatBytes available globally
 window.formatBytes = formatBytes;
+window.formatSpeed = formatSpeed;
 window.showToast = showToast;
