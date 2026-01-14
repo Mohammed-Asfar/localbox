@@ -2,13 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
-import { Upload, Zap } from 'lucide-react';
+import { X, Zap } from 'lucide-react';
 
-function FileUpload({ onUploadComplete }) {
+function FileUpload({ isOpen, onClose, onUploadComplete }) {
   const [uppy] = useState(() => {
     return new Uppy({
       debug: true,
-      autoProceed: true,
+      autoProceed: false,
       restrictions: {
         maxFileSize: null,
         maxNumberOfFiles: null,
@@ -22,13 +22,13 @@ function FileUpload({ onUploadComplete }) {
     });
   });
 
-  // Speed tracking state
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [eta, setEta] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const lastProgress = useRef({ bytes: 0, time: Date.now() });
   const speedHistory = useRef([]);
 
+  // ... (Keep existing formatting helpers) ...
   const formatSpeed = (bytesPerSecond) => {
     if (bytesPerSecond === 0) return '0 B/s';
     const k = 1024;
@@ -58,27 +58,18 @@ function FileUpload({ onUploadComplete }) {
       if (timeDiff >= 0.5) {
         const bytesDiff = progress.bytesUploaded - lastProgress.current.bytes;
         const instantSpeed = bytesDiff / timeDiff;
-
         speedHistory.current.push(instantSpeed);
-        if (speedHistory.current.length > 5) {
-          speedHistory.current.shift();
-        }
-
+        if (speedHistory.current.length > 5) speedHistory.current.shift();
         const avgSpeed = speedHistory.current.reduce((a, b) => a + b, 0) / speedHistory.current.length;
         setUploadSpeed(avgSpeed);
-
         const remaining = progress.bytesTotal - progress.bytesUploaded;
         setEta(remaining / avgSpeed);
-
         lastProgress.current = { bytes: progress.bytesUploaded, time: now };
       }
     });
 
     uppy.on('complete', (result) => {
       setIsUploading(false);
-      setUploadSpeed(0);
-      setEta(null);
-
       if (result.successful.length > 0) {
         onUploadComplete?.();
       }
@@ -87,53 +78,54 @@ function FileUpload({ onUploadComplete }) {
     return () => uppy.clear();
   }, [uppy, onUploadComplete]);
 
+  if (!isOpen) return null;
+
   return (
-    <section className="mb-12">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <span className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-            <Upload className="w-5 h-5 text-sky-400" />
-          </span>
-          Upload Files
-        </h2>
-        <div className="text-sm text-slate-400">
-          Drag & drop or click to browse • Resumable uploads
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden relative">
+        <button // Close button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-zinc-400 hover:text-white z-10 p-1 bg-zinc-800 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="p-6 border-b border-white/5 bg-zinc-900">
+          <h2 className="text-xl font-bold text-white">Upload Files</h2>
+          <p className="text-sm text-zinc-500">Drag & drop files or resume previous uploads</p>
         </div>
-      </div>
 
-      <div className="relative">
-        <Dashboard
-          uppy={uppy}
-          height={350}
-          width="100%"
-          showProgressDetails={true}
-          proudlyDisplayPoweredByUppy={false}
-          note="Large files will auto-resume if interrupted"
-          theme="dark"
-          showRemoveButtonAfterComplete={true}
-        />
+        <div className="bg-[#1a1a1a]">
+          <Dashboard
+            uppy={uppy}
+            width="100%"
+            height={400}
+            theme="dark"
+            showProgressDetails={true}
+            proudlyDisplayPoweredByUppy={false}
+          />
+        </div>
 
-        {/* Speed Display */}
+        {/* Speed Display Overlay */}
         {isUploading && (
-          <div className="absolute top-4 left-4 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl px-4 py-3 shadow-2xl z-50 min-w-[200px]">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-sky-500 rounded-full animate-pulse"></div>
-              <div>
-                <div className="text-sm text-slate-400">Upload Speed</div>
-                <div className="text-lg font-bold text-sky-400 flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  {formatSpeed(uploadSpeed)}
+          <div className="absolute bottom-6 left-6 bg-zinc-950/90 backdrop-blur border border-white/10 rounded-xl px-4 py-3 shadow-xl z-20 min-w-[200px] flex items-center justify-between">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Zap className="w-4 h-4 text-blue-400" />
                 </div>
-              </div>
-            </div>
-            <div className="mt-2 pt-2 border-t border-slate-700 flex justify-between text-sm">
-              <span className="text-slate-400">ETA:</span>
-              <span className="text-slate-200">{formatETA(eta)}</span>
-            </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-zinc-500">Speed</div>
+                  <div className="text-base font-bold text-white font-mono">{formatSpeed(uploadSpeed)}</div>
+                </div>
+             </div>
+             <div className="text-right">
+                  <div className="text-[10px] uppercase font-bold text-zinc-500">ETA</div>
+                  <div className="text-base font-bold text-zinc-300 font-mono">{formatETA(eta)}</div>
+             </div>
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 

@@ -1,10 +1,12 @@
-import Header from './components/Header';
-import FileUpload from './components/FileUpload';
-import FileList from './components/FileList';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import FileList from './components/FileList';
+import FileUpload from './components/FileUpload';
+import DeleteModal from './components/DeleteModal';
 
-// API base URL - will be proxied in development
+// API Configuration
 const API_BASE = '/api';
 
 function App() {
@@ -12,88 +14,109 @@ function App() {
   const [stats, setStats] = useState({ total: { files: 0, size: 0 } });
   const [currentCategory, setCurrentCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  
+  // UI State
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ open: false, file: null, category: null });
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch files from API
-  const fetchFiles = async (category = 'all') => {
+  // Fetch Data
+  const fetchData = async (category = currentCategory) => {
     setIsLoading(true);
     try {
-      const url = category === 'all' ? `${API_BASE}/files` : `${API_BASE}/files?category=${category}`;
-      const response = await axios.get(url);
-      setFiles(response.data.files);
+      const [filesRes, statsRes] = await Promise.all([
+        axios.get(category === 'all' ? `${API_BASE}/files` : `${API_BASE}/files?category=${category}`),
+        axios.get(`${API_BASE}/stats`)
+      ]);
+      setFiles(filesRes.data.files);
+      setStats(statsRes.data);
     } catch (error) {
-      console.error('Error fetching files:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch storage stats
-  const fetchStats = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/stats`);
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
-  // Delete file
-  const deleteFile = async (category, filename) => {
-    try {
-      await axios.delete(`${API_BASE}/files/${category}/${encodeURIComponent(filename)}`);
-      fetchFiles(currentCategory);
-      fetchStats();
-      return true;
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      return false;
-    }
-  };
-
-  // Handle category change
-  const handleCategoryChange = (category) => {
-    setCurrentCategory(category);
-    fetchFiles(category);
-  };
-
-  // Handle upload complete
-  const handleUploadComplete = () => {
-    setTimeout(() => {
-      fetchFiles(currentCategory);
-      fetchStats();
-    }, 500);
-  };
-
-  // Initial load
   useEffect(() => {
-    fetchFiles();
-    fetchStats();
+    fetchData();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-slate-950">
-      <Header stats={stats} />
-      
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <FileUpload onUploadComplete={handleUploadComplete} />
-        
-        <FileList
-          files={files}
-          isLoading={isLoading}
-          currentCategory={currentCategory}
-          onCategoryChange={handleCategoryChange}
-          onDelete={deleteFile}
-          onRefresh={() => {
-            fetchFiles(currentCategory);
-            fetchStats();
-          }}
-        />
-      </main>
+  // Handlers
+  const handleCategoryChange = (category) => {
+    setCurrentCategory(category);
+    fetchData(category);
+  };
 
-      <footer className="border-t border-slate-800 mt-16 py-8 text-center text-slate-500 text-sm">
-        <p>LocalBox v1.0.0 • Self-Hosted File Storage</p>
-        <p className="mt-1">Your files. Your server. Your control.</p>
-      </footer>
+  const handleUploadComplete = () => {
+    fetchData();
+    // Don't close modal automatically to allow multiple uploads, or close it?
+    // Let's keep it open but refresh the background list
+  };
+
+  const handleDeleteRequest = (category, filename) => {
+    setDeleteModal({ open: true, file: filename, category });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.file) return;
+    setIsDeleting(true);
+    try {
+      await axios.delete(`${API_BASE}/files/${deleteModal.category}/${encodeURIComponent(deleteModal.file)}`);
+      await fetchData();
+      setDeleteModal({ open: false, file: null, category: null });
+    } catch (error) {
+      console.error('Delete failed:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-black text-zinc-200 overflow-hidden font-sans selection:bg-blue-500/30">
+      {/* 1. Sidebar */}
+      <Sidebar 
+        currentCategory={currentCategory} 
+        onCategoryChange={handleCategoryChange}
+        storageStats={stats.categories || {}}
+      />
+
+      {/* 2. Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0F0F10] m-2 ml-0 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden">
+        
+        {/* Header */}
+        <Header 
+          currentPath={`Library / ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`}
+          onUploadClick={() => setIsUploadOpen(true)}
+        />
+
+        {/* File List */}
+        <FileList 
+          files={files} 
+          isLoading={isLoading} 
+          onDelete={handleDeleteRequest} 
+          onRefresh={() => fetchData(currentCategory)} 
+        />
+        
+        {/* Footer Stats similar to Finder */}
+        <div className="h-8 bg-zinc-950/50 border-t border-white/5 flex items-center justify-center text-xs text-zinc-500 font-medium select-none">
+           {files.length} items • {stats.total?.size ? (stats.total.size / 1024 / 1024).toFixed(1) : 0} MB available
+        </div>
+      </div>
+
+      {/* 3. Modals */}
+      <FileUpload 
+        isOpen={isUploadOpen} 
+        onClose={() => setIsUploadOpen(false)}
+        onUploadComplete={handleUploadComplete}
+      />
+
+      <DeleteModal 
+        isOpen={deleteModal.open}
+        filename={deleteModal.file}
+        isDeleting={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModal({ open: false, file: null, category: null })}
+      />
     </div>
   );
 }

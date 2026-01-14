@@ -1,89 +1,90 @@
 @import "tailwindcss";
+@import "@uppy/core/dist/style.min.css";
+@import "@uppy/dashboard/dist/style.min.css";
 
-/* Custom dark theme for the app */
-:root {
-  --color-primary: #0ea5e9;
-  --color-primary-light: #38bdf8;
-  --color-dark-950: #020617;
-  --color-dark-900: #0f172a;
-  --color-dark-800: #1e293b;
-  --color-dark-700: #334155;
-  --color-dark-600: #475569;
-  --color-dark-500: #64748b;
-  --color-dark-400: #94a3b8;
-  --color-dark-300: #cbd5e1;
-  --color-dark-200: #e2e8f0;
-  --color-dark-100: #f1f5f9;
+@theme {
+  --color-dark-950: #0a0a0a;
+  --color-dark-900: #121212;
+  --color-dark-850: #1a1a1a;
+  --color-dark-800: #27272a;
+  --color-dark-700: #3f3f46;
+  --color-dark-600: #52525b;
+  --color-dark-500: #71717a;
+  --color-dark-400: #a1a1aa;
+  --color-dark-300: #d4d4d8;
+  --color-dark-200: #e4e4e7;
+  --color-dark-100: #f4f4f5;
+  
+  --color-accent-blue: #3b82f6;
+  --color-accent-glow: rgba(59, 130, 246, 0.5);
 }
 
+/* Base resets */
 body {
-  background-color: var(--color-dark-950);
-  color: var(--color-dark-100);
+  background-color: #050505; /* Ultra dark background */
+  color: var(--color-dark-200);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden; /* Prevent body scroll, handle inside app */
+  height: 100vh;
 }
 
-/* Custom scrollbar */
+#root {
+  height: 100%;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-dark-800);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-dark-600);
-  border-radius: 4px;
+  background: var(--color-dark-700);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-dark-500);
+  background: var(--color-dark-600);
 }
 
-/* Uppy Dashboard dark theme overrides */
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Mac-style Window Controls */
+.window-control {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.window-red { background-color: #ff5f56; }
+.window-yellow { background-color: #ffbd2e; }
+.window-green { background-color: #27c93f; }
+
+/* Upload Progress Bar Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Uppy Dark Theme Overrides for new theme */
 .uppy-Dashboard-inner {
-  background: var(--color-dark-800) !important;
-  border-color: var(--color-dark-700) !important;
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
 }
 
-.uppy-Dashboard-AddFiles {
-  border-color: var(--color-dark-600) !important;
-}
-
-.uppy-Dashboard-AddFiles-title {
-  color: var(--color-dark-200) !important;
-}
-
-.uppy-Dashboard-note {
-  color: var(--color-dark-400) !important;
-}
-
-.uppy-DashboardTab-name {
-  color: var(--color-dark-300) !important;
+.uppy-Dashboard-Content {
+  border-left: 1px solid #333 !important;
 }
 
 .uppy-StatusBar {
-  background: var(--color-dark-900) !important;
-}
-
-.uppy-StatusBar-content {
-  color: var(--color-dark-200) !important;
-}
-
-.uppy-StatusBar-actionBtn--upload {
-  background: var(--color-primary) !important;
-}
-
-.uppy-Dashboard-Item {
-  background: var(--color-dark-700) !important;
-  border-color: var(--color-dark-600) !important;
-}
-
-.uppy-Dashboard-Item-name {
-  color: var(--color-dark-100) !important;
-}
-
-.uppy-Dashboard-Item-statusSize {
-  color: var(--color-dark-400) !important;
+  background: #121212 !important;
+  border-top: 1px solid #333 !important;
 }

@@ -1,118 +1,116 @@
-import { useState } from 'react';
-import { FolderOpen, RefreshCw, Image, FileText, Archive, Video, Music, File, Loader2 } from 'lucide-react';
-import FileCard from './FileCard';
-import DeleteModal from './DeleteModal';
+import { MoreHorizontal, Download, Trash2, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive } from 'lucide-react';
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Files', icon: FolderOpen },
-  { id: 'images', label: 'Images', icon: Image, emoji: '🖼️' },
-  { id: 'documents', label: 'Documents', icon: FileText, emoji: '📄' },
-  { id: 'archives', label: 'Archives', icon: Archive, emoji: '📦' },
-  { id: 'videos', label: 'Videos', icon: Video, emoji: '🎬' },
-  { id: 'audio', label: 'Audio', icon: Music, emoji: '🎵' },
-  { id: 'others', label: 'Others', icon: File, emoji: '📁' },
-];
+const getFileIcon = (category) => {
+  switch (category) {
+    case 'images': return { icon: ImageIcon, color: 'text-purple-400' };
+    case 'documents': return { icon: FileText, color: 'text-blue-400' };
+    case 'videos': return { icon: VideoIcon, color: 'text-rose-400' };
+    case 'audio': return { icon: Music, color: 'text-emerald-400' };
+    case 'archives': return { icon: Archive, color: 'text-amber-400' };
+    default: return { icon: FileIcon, color: 'text-zinc-400' };
+  }
+};
 
-function FileList({ files, isLoading, currentCategory, onCategoryChange, onDelete, onRefresh }) {
-  const [deleteModal, setDeleteModal] = useState({ open: false, file: null });
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDeleteClick = (file) => {
-    setDeleteModal({ open: true, file });
+function FileList({ files, isLoading, onDelete, onRefresh }) {
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteModal.file) return;
-    
-    setIsDeleting(true);
-    const success = await onDelete(deleteModal.file.category, deleteModal.file.name);
-    setIsDeleting(false);
-    
-    if (success) {
-      setDeleteModal({ open: false, file: null });
-    }
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteModal({ open: false, file: null });
+  const handleDownload = (e, file) => {
+    e.stopPropagation();
+    const url = `/api/download/${file.category}/${encodeURIComponent(file.name)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
+
+  if (files.length === 0 && !isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 pb-20">
+        <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
+          <FileIcon className="w-8 h-8 opacity-50" />
+        </div>
+        <p className="text-zinc-400 font-medium">No files found</p>
+        <p className="text-sm mt-1">Upload a file to get started</p>
+      </div>
+    );
+  }
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <span className="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center">
-            <FolderOpen className="w-5 h-5 text-sky-400" />
-          </span>
-          Your Files
-        </h2>
-        <button
-          onClick={onRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-sm"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
-
-      {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => onCategoryChange(cat.id)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
-              currentCategory === cat.id
-                ? 'bg-gradient-to-r from-sky-500 to-sky-700 text-white'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-            }`}
-          >
-            {cat.emoji || ''} {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Loading State */}
-      {isLoading && (
-        <div className="text-center py-16">
-          <Loader2 className="w-12 h-12 text-sky-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Loading files...</p>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && files.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto mb-6 flex items-center justify-center">
-            <FolderOpen className="w-12 h-12 text-slate-500" />
-          </div>
-          <h3 className="text-xl font-semibold text-slate-300 mb-2">No files yet</h3>
-          <p className="text-slate-500">Upload some files to get started</p>
-        </div>
-      )}
-
-      {/* File Grid */}
-      {!isLoading && files.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {files.map((file, index) => (
-            <FileCard
-              key={`${file.category}-${file.name}-${index}`}
-              file={file}
-              onDelete={() => handleDeleteClick(file)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Delete Modal */}
-      <DeleteModal
-        isOpen={deleteModal.open}
-        filename={deleteModal.file?.name}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        isDeleting={isDeleting}
-      />
-    </section>
+    <div className="flex-1 overflow-auto">
+      <table className="w-full text-left text-sm border-separate border-spacing-0">
+        <thead className="sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10 text-zinc-500 font-medium">
+          <tr>
+            <th className="px-6 py-3 border-b border-white/5 w-[50%]">Name</th>
+            <th className="px-6 py-3 border-b border-white/5">Date</th>
+            <th className="px-6 py-3 border-b border-white/5">Size</th>
+            <th className="px-6 py-3 border-b border-white/5 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {files.map((file, idx) => {
+            const { icon: Icon, color } = getFileIcon(file.category);
+            
+            return (
+              <tr 
+                key={`${file.name}-${idx}`} 
+                className="group hover:bg-white/[0.02] transition-colors cursor-default"
+              >
+                <td className="px-6 py-3">
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-5 h-5 ${color}`} />
+                    <span className="text-zinc-200 font-medium group-hover:text-white transition-colors">
+                      {file.name}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-3 text-zinc-500 whitespace-nowrap">
+                  {formatDate(file.createdAt)}
+                </td>
+                <td className="px-6 py-3 text-zinc-500 font-mono text-xs">
+                  {formatBytes(file.size)}
+                </td>
+                <td className="px-6 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => handleDownload(e, file)}
+                      className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      title="Download"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete(file.category, file.name); }}
+                      className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
