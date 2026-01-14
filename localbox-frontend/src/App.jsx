@@ -5,6 +5,7 @@ import Header from './components/Header';
 import FileList from './components/FileList';
 import FileUpload from './components/FileUpload';
 import DeleteModal from './components/DeleteModal';
+import PreviewModal from './components/PreviewModal';
 
 // API Configuration
 const API_BASE = '/api';
@@ -20,6 +21,7 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, file: null, category: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   // Fetch Data
   const fetchData = async (category = currentCategory) => {
@@ -46,10 +48,9 @@ function App() {
   const handleCategoryChange = (category) => {
     setCurrentCategory(category);
     fetchData(category);
-    setIsMobileMenuOpen(false); // Close menu on selection
+    setIsMobileMenuOpen(false);
   };
   
-  // ... (Keep existing handlers for upload and delete) ...
   const handleUploadComplete = () => {
     fetchData();
   };
@@ -72,9 +73,13 @@ function App() {
     }
   };
 
+  const handlePreview = (file) => {
+    setPreviewFile(file);
+  };
+
   return (
     <div className="flex h-screen bg-black text-zinc-200 overflow-hidden font-sans selection:bg-blue-500/30">
-      {/* 1. Sidebar (Pass mobile state) */}
+      {/* 1. Sidebar */}
       <Sidebar 
         currentCategory={currentCategory} 
         onCategoryChange={handleCategoryChange}
@@ -86,7 +91,7 @@ function App() {
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#0F0F10] md:m-2 md:ml-0 md:rounded-2xl border-l md:border border-white/5 shadow-2xl relative overflow-hidden transition-all duration-300">
         
-        {/* Header (Pass onMenuClick) */}
+        {/* Header */}
         <Header 
           currentPath={`Library / ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`}
           onUploadClick={() => setIsUploadOpen(true)}
@@ -98,12 +103,13 @@ function App() {
           files={files} 
           isLoading={isLoading} 
           onDelete={handleDeleteRequest} 
-          onRefresh={() => fetchData(currentCategory)} 
+          onRefresh={() => fetchData(currentCategory)}
+          onPreview={handlePreview}
         />
         
-        {/* Footer Stats similar to Finder */}
+        {/* Footer */}
         <div className="h-8 bg-zinc-950/50 border-t border-white/5 flex items-center justify-center text-xs text-zinc-500 font-medium select-none">
-           {files.length} items • {stats.total?.size ? (stats.total.size / 1024 / 1024).toFixed(1) : 0} MB available
+           {files.length} items • {stats.total?.size ? (stats.total.size / 1024 / 1024).toFixed(1) : 0} MB
         </div>
       </div>
 
@@ -120,6 +126,14 @@ function App() {
         isDeleting={isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteModal({ open: false, file: null, category: null })}
+      />
+
+      <PreviewModal
+        isOpen={!!previewFile}
+        file={previewFile}
+        files={files}
+        onClose={() => setPreviewFile(null)}
+        onNavigate={(file) => setPreviewFile(file)}
       />
     </div>
   );

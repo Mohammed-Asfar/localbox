@@ -1,4 +1,5 @@
-import { MoreHorizontal, Download, Trash2, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive } from 'lucide-react';
+import { MoreHorizontal, Download, Trash2, Eye, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive } from 'lucide-react';
+import { canPreview } from './PreviewModal';
 
 const getFileIcon = (category) => {
   switch (category) {
@@ -11,8 +12,7 @@ const getFileIcon = (category) => {
   }
 };
 
-function FileList({ files, isLoading, onDelete, onRefresh }) {
-  // ... (Keep existing helpers) ...
+function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -42,6 +42,12 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
     document.body.removeChild(a);
   };
 
+  const handleRowClick = (file) => {
+    if (canPreview(file.name)) {
+      onPreview(file);
+    }
+  };
+
   if (files.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 pb-20">
@@ -68,18 +74,23 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
         <tbody className="divide-y divide-white/5">
           {files.map((file, idx) => {
             const { icon: Icon, color } = getFileIcon(file.category);
+            const isPreviewable = canPreview(file.name);
             
             return (
               <tr 
                 key={`${file.name}-${idx}`} 
-                className="group hover:bg-white/[0.02] transition-colors cursor-default"
+                onClick={() => handleRowClick(file)}
+                className={`group hover:bg-white/[0.02] transition-colors ${isPreviewable ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <td className="px-4 md:px-6 py-3 max-w-[200px] sm:max-w-none">
                   <div className="flex items-center gap-3">
                     <Icon className={`w-5 h-5 ${color} flex-shrink-0`} />
                     <div className="min-w-0">
-                        <div className="text-zinc-200 font-medium group-hover:text-white transition-colors truncate">
+                        <div className="text-zinc-200 font-medium group-hover:text-white transition-colors truncate flex items-center gap-2">
                             {file.name}
+                            {isPreviewable && (
+                              <Eye className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            )}
                         </div>
                         {/* Mobile-only info subtext */}
                         <div className="md:hidden text-xs text-zinc-500 flex gap-2">
@@ -98,6 +109,15 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
                 </td>
                 <td className="px-4 md:px-6 py-3 text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1 md:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    {isPreviewable && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onPreview(file); }}
+                        className="p-2 md:p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                        title="Preview"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
                     <button 
                       onClick={(e) => handleDownload(e, file)}
                       className="p-2 md:p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
