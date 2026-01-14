@@ -328,43 +328,83 @@ app.put('/api/files/:category/:filename', (req, res) => {
     }
 });
 
-// API: Move file to different category
-app.patch('/api/files/:category/:filename/move', (req, res) => {
-    const { category, filename } = req.params;
-    const { newCategory } = req.body;
+// API: Move file to different category or folder
+app.patch('/api/files/:category/*/move', (req, res) => {
+    const category = req.params.category;
+    const filePath = req.params[0]; // The file path after category
+    const { newCategory, targetPath } = req.body;
 
+    // newCategory is required, targetPath is optional (defaults to root of category)
     if (!newCategory || !getCategories().includes(newCategory)) {
         return res.status(400).json({ error: 'Invalid category' });
     }
 
-    if (category === newCategory) {
-        return res.status(400).json({ error: 'File is already in this category' });
-    }
+    const fileName = path.basename(filePath);
+    const oldFullPath = path.join(STORAGE_DIR, category, filePath);
+    
+    // Build new path: category + targetPath (if any) + filename
+    const newFullPath = targetPath
+        ? path.join(STORAGE_DIR, newCategory, targetPath, fileName)
+        : path.join(STORAGE_DIR, newCategory, fileName);
 
-    const oldPath = path.join(STORAGE_DIR, category, filename);
-    const newPath = path.join(STORAGE_DIR, newCategory, filename);
-
-    if (!fs.existsSync(oldPath)) {
+    if (!fs.existsSync(oldFullPath)) {
         return res.status(404).json({ error: 'File not found' });
     }
 
-    if (fs.existsSync(newPath)) {
-        return res.status(409).json({ error: 'A file with this name already exists in the target category' });
+    if (oldFullPath === newFullPath) {
+        return res.status(400).json({ error: 'Source and destination are the same' });
+    }
+
+    if (fs.existsSync(newFullPath)) {
+        return res.status(409).json({ error: 'A file with this name already exists in the target location' });
+    }
+
+    // Ensure target directory exists
+    const targetDir = path.dirname(newFullPath);
+    if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
     }
 
     try {
-        fs.renameSync(oldPath, newPath);
-        console.log(`📦 Moved: ${category}/${filename} -> ${newCategory}/${filename}`);
-        res.json({ success: true, message: 'File moved', newCategory });
+        fs.renameSync(oldFullPath, newFullPath);
+        console.log(`📦 Moved: ${category}/${filePath} -> ${newCategory}/${targetPath ? targetPath + '/' : ''}${fileName}`);
+        res.json({ success: true, message: 'File moved', newCategory, targetPath });
     } catch (error) {
         console.error('Error moving file:', error);
         res.status(500).json({ error: 'Failed to move file' });
     }
 });
 
-// API: Get available categories (for move dropdown)
+// API: Get available categories
 app.get('/api/categories', (req, res) => {
     res.json({ categories: getCategories() });
+});
+
+// API: List folders in a category (recursive)
+app.get('/api/folders/:category', (req, res) => {
+    const { category } = req.params;
+    const catDir = path.join(STORAGE_DIR, category);
+    
+    if (!fs.existsSync(catDir)) {
+        return res.json({ folders: [] });
+    }
+
+    const folders = [];
+    
+    function scanDir(dir, relativePath = '') {
+        const entries = fs.readdirSync(dir);
+        entries.forEach(name => {
+            const fullPath = path.join(dir, name);
+            if (fs.statSync(fullPath).isDirectory()) {
+                const folderPath = relativePath ? `${relativePath}/${name}` : name;
+                folders.push({ name, path: folderPath });
+                scanDir(fullPath, folderPath); // Recursive
+            }
+        });
+    }
+    
+    scanDir(catDir);
+    res.json({ folders });
 });
 
 // Get local IP address

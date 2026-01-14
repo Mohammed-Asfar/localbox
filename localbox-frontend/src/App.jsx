@@ -159,20 +159,20 @@ function App() {
     setMoveModal({ open: true, file: selectedFiles[0], isBulk: true });
   };
 
-  const handleMoveConfirm = async (newCategory) => {
+  const handleMoveConfirm = async (newCategory, targetPath = '') => {
     setIsProcessing(true);
     try {
       if (moveModal.isBulk) {
         for (const file of selectedFiles) {
           await axios.patch(
             `${API_BASE}/files/${file.category}/${encodeURIComponent(file.path || file.name)}/move`,
-            { newCategory }
+            { newCategory, targetPath }
           );
         }
       } else {
         await axios.patch(
           `${API_BASE}/files/${moveModal.file.category}/${encodeURIComponent(moveModal.file.path || moveModal.file.name)}/move`,
-          { newCategory }
+          { newCategory, targetPath }
         );
       }
       await fetchData(currentCategory, currentPath);
