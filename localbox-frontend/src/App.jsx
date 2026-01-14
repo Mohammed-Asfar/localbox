@@ -78,7 +78,7 @@ function App() {
       <Sidebar 
         currentCategory={currentCategory} 
         onCategoryChange={handleCategoryChange}
-        storageStats={stats.categories || {}}
+        storageStats={stats}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />

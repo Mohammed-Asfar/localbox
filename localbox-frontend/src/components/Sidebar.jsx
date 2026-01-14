@@ -92,9 +92,9 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
                 <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
                 {cat.label}
                 
-                {storageStats[cat.id] && storageStats[cat.id].count > 0 && (
+                {storageStats.categories?.[cat.id]?.count > 0 && (
                   <span className="ml-auto text-xs text-zinc-600 group-hover:text-zinc-500">
-                    {storageStats[cat.id].count}
+                    {storageStats.categories[cat.id].count}
                   </span>
                 )}
               </button>
