@@ -20,7 +20,7 @@ const CATEGORIES = [
   { id: 'others', label: 'Others', icon: Folder },
 ];
 
-function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onClose }) {
+function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onClose, theme }) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -29,14 +29,13 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Base classes always applied
-  const baseClasses = "bg-zinc-950 border-r border-white/5 flex flex-col p-4 transition-transform duration-300 ease-in-out z-40";
-  
+  const isDark = theme !== 'light';
+
   const responsiveClasses = `
     fixed inset-y-0 left-0 w-64 
     ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
     md:translate-x-0 md:static md:h-auto
-    border-r border-white/10 shadow-2xl md:shadow-none
+    shadow-2xl md:shadow-none z-40
   `;
 
   const percentUsed = () => {
@@ -46,10 +45,14 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
 
   return (
     <>
-      <aside className={`${baseClasses} ${responsiveClasses}`}>
+      <aside className={`flex flex-col p-4 transition-all duration-300 ${responsiveClasses} ${
+        isDark 
+          ? 'bg-zinc-950 border-r border-white/5' 
+          : 'bg-gray-50 border-r border-gray-200'
+      }`}>
         {/* Mobile Close Button */}
         <div className="flex md:hidden justify-end mb-2">
-           <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white">
+           <button onClick={onClose} className={`p-2 rounded-lg ${isDark ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
              <X className="w-5 h-5" />
            </button>
         </div>
@@ -60,14 +63,14 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
             <HardDrive className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white tracking-wide">LocalBox</h1>
-            <p className="text-[10px] text-zinc-500 font-medium">SERVER STORAGE</p>
+            <h1 className={`font-bold tracking-wide ${isDark ? 'text-white' : 'text-gray-900'}`}>LocalBox</h1>
+            <p className={`text-[10px] font-medium ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>SERVER STORAGE</p>
           </div>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1">
-          <p className="px-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Library</p>
+          <p className={`px-3 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Library</p>
           
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
@@ -78,22 +81,26 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
                 key={cat.id}
                 onClick={() => {
                    onCategoryChange(cat.id);
-                   onClose(); // Close on mobile selection
+                   onClose();
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative
                   ${isActive 
-                    ? 'text-white bg-white/10' 
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    ? isDark 
+                      ? 'text-white bg-white/10' 
+                      : 'text-blue-600 bg-blue-50'
+                    : isDark
+                      ? 'text-zinc-400 hover:text-white hover:bg-white/5'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
               >
                 {isActive && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-r-full" />
                 )}
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : isDark ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-gray-400 group-hover:text-gray-600'}`} />
                 {cat.label}
                 
                 {storageStats.categories?.[cat.id]?.count > 0 && (
-                  <span className="ml-auto text-xs text-zinc-600 group-hover:text-zinc-500">
+                  <span className={`ml-auto text-xs ${isDark ? 'text-zinc-600 group-hover:text-zinc-500' : 'text-gray-400'}`}>
                     {storageStats.categories[cat.id].count}
                   </span>
                 )}
@@ -104,25 +111,24 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
 
         {/* Storage Widget */}
         <div className="mt-auto pt-6 px-2 pb-6">
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/5">
+          <div className={`p-4 rounded-2xl ${isDark ? 'bg-zinc-900 border border-white/5' : 'bg-white border border-gray-200 shadow-sm'}`}>
             <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 rounded-full bg-zinc-800 text-zinc-400">
+              <div className={`p-1.5 rounded-full ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-gray-100 text-gray-500'}`}>
                 <HardDrive className="w-3 h-3" />
               </div>
-              <span className="text-xs font-medium text-zinc-300">Storage Used</span>
+              <span className={`text-xs font-medium ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>Storage Used</span>
             </div>
             
-            {/* Show "Used" out of "Total" */}
             <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-lg font-bold text-white">
+                <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                  {formatBytes(storageStats.disk?.used || 0)}
                 </span>
-                <span className="text-xs text-zinc-500">
+                <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
                  / {formatBytes(storageStats.disk?.total || 0)}
                 </span>
             </div>
             
-            <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-gray-200'}`}>
               <div 
                 className="h-full bg-blue-600 rounded-full transition-all duration-500" 
                 style={{ width: `${percentUsed()}%` }}
