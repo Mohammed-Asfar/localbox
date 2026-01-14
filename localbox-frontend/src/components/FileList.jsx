@@ -101,12 +101,14 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
             const isFolder = item.type === 'folder';
             const selected = !isFolder && isSelected(item);
             const isImage = !isFolder && isImageFile(item.name);
-            const thumbnailUrl = isImage ? `/api/download/${item.category}/${encodeURIComponent(item.path || item.name)}` : null;
+            // Use thumbnail endpoint for cached images
+            const thumbnailUrl = isImage ? `/api/thumbnail/${item.category}/${encodeURIComponent(item.path || item.name)}` : null;
 
             return (
               <div
                 key={`${item.name}-${idx}`}
                 onClick={() => handleRowClick(item)}
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '0 180px' }}
                 className={`group relative rounded-xl overflow-hidden cursor-pointer transition-all ${
                   selected 
                     ? 'ring-2 ring-blue-500' 
@@ -116,27 +118,24 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                 }`}
               >
                 {/* Thumbnail / Icon */}
-                <div className={`aspect-square flex items-center justify-center relative ${
-                  theme === 'light' ? 'bg-gray-50' : 'bg-zinc-900'
+                <div className={`aspect-square flex items-center justify-center relative overflow-hidden ${
+                  theme === 'light' ? 'bg-gray-100' : 'bg-zinc-900'
                 }`}>
                   {thumbnailUrl ? (
                     <img 
                       src={thumbnailUrl} 
-                      alt={item.name} 
+                      alt=""
                       className="w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"
-                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                     />
-                  ) : null}
-                  {/* Fallback icon (shown if no thumbnail or on error) */}
-                  <div className={`absolute inset-0 flex items-center justify-center ${thumbnailUrl ? 'hidden' : ''}`}>
-                    <Icon className={`w-12 h-12 ${color}`} />
-                  </div>
+                  ) : (
+                    <Icon className={`w-10 h-10 ${color}`} />
+                  )}
                   
                   {/* Checkbox */}
                   {!isFolder && (
-                    <div className={`absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity ${selected ? 'opacity-100' : ''}`}>
+                    <div className={`absolute top-2 left-2 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                       <input
                         type="checkbox"
                         checked={selected}
@@ -149,7 +148,7 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
 
                   {/* Hover Actions */}
                   {!isFolder && (
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => handleDownload(e, item)}
                         className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg"
@@ -161,11 +160,11 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                 </div>
 
                 {/* Name */}
-                <div className={`px-2 py-2 ${theme === 'light' ? 'bg-white' : 'bg-zinc-950'}`}>
+                <div className={`px-2 py-1.5 ${theme === 'light' ? 'bg-white' : 'bg-zinc-950'}`}>
                   <p className={`text-xs font-medium truncate ${
                     theme === 'light' ? 'text-gray-700' : 'text-zinc-300'
                   }`}>{item.name}</p>
-                  <p className={`text-xs mt-0.5 ${theme === 'light' ? 'text-gray-400' : 'text-zinc-500'}`}>
+                  <p className={`text-[10px] ${theme === 'light' ? 'text-gray-400' : 'text-zinc-500'}`}>
                     {isFolder ? 'Folder' : formatBytes(item.size)}
                   </p>
                 </div>

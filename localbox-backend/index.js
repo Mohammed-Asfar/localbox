@@ -277,6 +277,35 @@ app.get('/api/stats', async (req, res) => {
     });
 });
 
+// API: Thumbnail - serve images with caching headers for faster loading
+app.get('/api/thumbnail/:category/*', (req, res) => {
+    const category = req.params.category;
+    const filePath = req.params[0];
+    const fullPath = path.join(STORAGE_DIR, category, filePath);
+
+    if (!fs.existsSync(fullPath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Check if it's an image
+    const ext = path.extname(fullPath).toLowerCase();
+    const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    
+    if (!imageExts.includes(ext)) {
+        return res.status(400).json({ error: 'Not an image file' });
+    }
+
+    // Set aggressive caching headers
+    res.set({
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Type': `image/${ext.slice(1) === 'jpg' ? 'jpeg' : ext.slice(1)}`
+    });
+
+    // Stream the file
+    const stream = fs.createReadStream(fullPath);
+    stream.pipe(res);
+});
+
 // API: Download file
 app.get('/api/download/:category/:filename', (req, res) => {
     const { category, filename } = req.params;
