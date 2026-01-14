@@ -43,8 +43,46 @@ const tusServer = new Server({
             // Wait a bit to ensure file is fully written
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Categorize and move file
-            const result = await categorizeFile(uploadPath, originalFilename, STORAGE_DIR);
+            // Check if user specified category and path
+            const userCategory = metadata.category;
+            const userPath = metadata.uploadPath || '';
+
+            let result;
+
+            if (userCategory && getCategories().includes(userCategory)) {
+                // User specified a valid category - move to that location
+                const targetDir = userPath 
+                    ? path.join(STORAGE_DIR, userCategory, userPath)
+                    : path.join(STORAGE_DIR, userCategory);
+
+                // Ensure target directory exists
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
+                }
+
+                const targetPath = path.join(targetDir, originalFilename);
+                
+                // Check for duplicate and rename if needed
+                let finalPath = targetPath;
+                let counter = 1;
+                while (fs.existsSync(finalPath)) {
+                    const ext = path.extname(originalFilename);
+                    const name = path.basename(originalFilename, ext);
+                    finalPath = path.join(targetDir, `${name} (${counter})${ext}`);
+                    counter++;
+                }
+
+                fs.renameSync(uploadPath, finalPath);
+                
+                result = {
+                    category: userCategory,
+                    filename: path.basename(finalPath),
+                    path: userPath
+                };
+            } else {
+                // Auto-categorize based on file extension (fallback)
+                result = await categorizeFile(uploadPath, originalFilename, STORAGE_DIR);
+            }
 
             // Clean up .json metadata file
             const metaFile = uploadPath + '.json';
@@ -52,7 +90,7 @@ const tusServer = new Server({
                 fs.unlinkSync(metaFile);
             }
 
-            console.log(`✅ Upload complete: ${result.category}/${result.filename}`);
+            console.log(`✅ Upload complete: ${result.category}/${result.path ? result.path + '/' : ''}${result.filename}`);
 
             return res;
         } catch (error) {
