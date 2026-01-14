@@ -101,7 +101,7 @@ app.get('/api/files', (req, res) => {
 });
 
 // API: Get storage statistics
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
     const stats = {};
     let totalSize = 0;
     let totalFiles = 0;
@@ -114,9 +114,13 @@ app.get('/api/stats', (req, res) => {
         if (fs.existsSync(catDir)) {
             fs.readdirSync(catDir).forEach(filename => {
                 const filePath = path.join(catDir, filename);
-                const fileStats = fs.statSync(filePath);
-                catSize += fileStats.size;
-                catCount++;
+                try {
+                    const fileStats = fs.statSync(filePath);
+                    catSize += fileStats.size;
+                    catCount++;
+                } catch (e) {
+                    // Ignore errors for individual files
+                }
             });
         }
 
@@ -129,12 +133,26 @@ app.get('/api/stats', (req, res) => {
         totalFiles += catCount;
     });
 
+    let diskInfo = { free: 0, size: 0 };
+    try {
+        // check-disk-space returns { diskPath, free, size }
+        const checkDiskSpace = require('check-disk-space').default;
+        diskInfo = await checkDiskSpace(STORAGE_DIR);
+    } catch (error) {
+        console.error('Error fetching disk space:', error);
+    }
+
     res.json({
         categories: stats,
         total: {
             files: totalFiles,
-            size: totalSize,
+            size: totalSize, // Size of files managed by app
         },
+        disk: {
+            free: diskInfo.free,
+            total: diskInfo.size,
+            used: diskInfo.size - diskInfo.free
+        }
     });
 });
 

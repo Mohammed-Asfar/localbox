@@ -32,18 +32,17 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
   // Base classes always applied
   const baseClasses = "bg-zinc-950 border-r border-white/5 flex flex-col p-4 transition-transform duration-300 ease-in-out z-40";
   
-  // Responsive behavior: 
-  // - Mobile: Fixed position, slide in/out
-  // - Desktop: Static position, always visible
-  // We use `fixed top-0 bottom-0 left-0 w-64` for mobile overlay
-  // And `md:relative md:translate-x-0` for desktop
-  
   const responsiveClasses = `
     fixed inset-y-0 left-0 w-64 
     ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
     md:translate-x-0 md:static md:h-auto
     border-r border-white/10 shadow-2xl md:shadow-none
   `;
+
+  const percentUsed = () => {
+    if (!storageStats.disk || storageStats.disk.total === 0) return 0;
+    return (storageStats.disk.used / storageStats.disk.total) * 100;
+  };
 
   return (
     <>
@@ -112,11 +111,22 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
               </div>
               <span className="text-xs font-medium text-zinc-300">Storage Used</span>
             </div>
-            <div className="text-lg font-bold text-white mb-1">
-              {formatBytes(storageStats.total?.size || 0)}
+            
+            {/* Show "Used" out of "Total" */}
+            <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-lg font-bold text-white">
+                 {formatBytes(storageStats.disk?.used || 0)}
+                </span>
+                <span className="text-xs text-zinc-500">
+                 / {formatBytes(storageStats.disk?.total || 0)}
+                </span>
             </div>
+            
             <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 w-1/4 rounded-full" /> 
+              <div 
+                className="h-full bg-blue-600 rounded-full transition-all duration-500" 
+                style={{ width: `${percentUsed()}%` }}
+              /> 
             </div>
           </div>
         </div>
