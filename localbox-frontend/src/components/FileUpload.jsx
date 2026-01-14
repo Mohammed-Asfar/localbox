@@ -2,9 +2,24 @@ import { useEffect, useState, useRef } from 'react';
 import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
-import { X, Zap } from 'lucide-react';
+import axios from 'axios';
+import { X, Zap, Folder, ChevronDown, ChevronRight, Image, FileText, Archive, Video, Music } from 'lucide-react';
 
-function FileUpload({ isOpen, onClose, onUploadComplete }) {
+const CATEGORIES = [
+  { id: 'images', label: 'Images', icon: Image },
+  { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'archives', label: 'Archives', icon: Archive },
+  { id: 'videos', label: 'Videos', icon: Video },
+  { id: 'audio', label: 'Audio', icon: Music },
+  { id: 'others', label: 'Others', icon: Folder },
+];
+
+function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, currentPath }) {
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedPath, setSelectedPath] = useState('');
+  const [folders, setFolders] = useState([]);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+
   const [uppy] = useState(() => {
     return new Uppy({
       debug: true,
@@ -16,7 +31,7 @@ function FileUpload({ isOpen, onClose, onUploadComplete }) {
     }).use(Tus, {
       endpoint: '/files',
       retryDelays: [0, 1000, 3000, 5000],
-      chunkSize: 100 * 1024 * 1024, // 100MB chunks
+      chunkSize: 100 * 1024 * 1024,
       removeFingerprintOnSuccess: true,
       storeFingerprintForResuming: true,
     });
@@ -27,6 +42,41 @@ function FileUpload({ isOpen, onClose, onUploadComplete }) {
   const [isUploading, setIsUploading] = useState(false);
   const lastProgress = useRef({ bytes: 0, time: Date.now() });
   const speedHistory = useRef([]);
+
+  // Set initial category when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const cat = currentCategory && currentCategory !== 'all' ? currentCategory : 'images';
+      setSelectedCategory(cat);
+      setSelectedPath(currentPath || '');
+      loadFolders(cat);
+    }
+  }, [isOpen, currentCategory, currentPath]);
+
+  const loadFolders = async (category) => {
+    try {
+      const res = await axios.get(`/api/folders/${category}`);
+      setFolders(res.data.folders || []);
+    } catch (e) {
+      setFolders([]);
+    }
+  };
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
+    setSelectedPath('');
+    loadFolders(cat);
+  };
+
+  // Update Tus metadata when category/path changes
+  useEffect(() => {
+    uppy.setOptions({
+      meta: {
+        category: selectedCategory,
+        uploadPath: selectedPath,
+      }
+    });
+  }, [selectedCategory, selectedPath, uppy]);
 
   const formatSpeed = (bytesPerSecond) => {
     if (!bytesPerSecond || !isFinite(bytesPerSecond) || bytesPerSecond <= 0) return '-- B/s';
@@ -94,6 +144,8 @@ function FileUpload({ isOpen, onClose, onUploadComplete }) {
 
   if (!isOpen) return null;
 
+  const selectedCategoryInfo = CATEGORIES.find(c => c.id === selectedCategory);
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden relative">
@@ -104,38 +156,101 @@ function FileUpload({ isOpen, onClose, onUploadComplete }) {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6 border-b border-white/5 bg-zinc-900">
-          <div className="flex items-center justify-between">
+        <div className="p-4 border-b border-white/5 bg-zinc-900">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h2 className="text-xl font-bold text-white">Upload Files</h2>
-              <p className="text-sm text-zinc-500">Drag & drop files or resume previous uploads</p>
+              <h2 className="text-lg font-bold text-white">Upload Files</h2>
+              <p className="text-xs text-zinc-500">Select destination folder</p>
             </div>
             
-            {/* Speed Display - Now in header, not overlapping */}
+            {/* Speed Display */}
             {isUploading && (
-              <div className="flex items-center gap-4 bg-zinc-800/50 border border-white/5 rounded-xl px-4 py-2">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-400" />
-                  <div>
-                    <div className="text-[10px] uppercase font-bold text-zinc-500">Speed</div>
-                    <div className="text-sm font-bold text-white font-mono">{formatSpeed(uploadSpeed)}</div>
-                  </div>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-zinc-500">ETA</div>
-                  <div className="text-sm font-bold text-zinc-300 font-mono">{formatETA(eta)}</div>
-                </div>
+              <div className="flex items-center gap-3 bg-zinc-800/50 border border-white/5 rounded-lg px-3 py-1.5">
+                <Zap className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-mono text-white">{formatSpeed(uploadSpeed)}</span>
+                <span className="text-xs text-zinc-500">ETA: {formatETA(eta)}</span>
               </div>
             )}
           </div>
+
+          {/* Destination Picker */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {/* Category Selector */}
+            <div className="flex gap-1 flex-wrap">
+              {CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryChange(cat.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Folder Selector */}
+            {folders.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowFolderPicker(!showFolderPicker)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+                >
+                  <Folder className="w-4 h-4 text-yellow-400" />
+                  <span className="max-w-[150px] truncate">
+                    {selectedPath || 'Root folder'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showFolderPicker ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showFolderPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-zinc-900 border border-white/10 rounded-lg shadow-xl z-20 min-w-[200px] max-h-48 overflow-auto">
+                    <button
+                      onClick={() => { setSelectedPath(''); setShowFolderPicker(false); }}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 flex items-center gap-2 ${
+                        !selectedPath ? 'text-blue-400' : 'text-zinc-300'
+                      }`}
+                    >
+                      <Folder className="w-4 h-4" />
+                      Root folder
+                    </button>
+                    {folders.map((folder) => (
+                      <button
+                        key={folder.path}
+                        onClick={() => { setSelectedPath(folder.path); setShowFolderPicker(false); }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 flex items-center gap-2 ${
+                          selectedPath === folder.path ? 'text-blue-400' : 'text-zinc-300'
+                        }`}
+                      >
+                        <Folder className="w-4 h-4 text-yellow-400" />
+                        {folder.path}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Current destination display */}
+          <p className="mt-2 text-xs text-zinc-500">
+            Uploading to: <span className="text-zinc-300">{selectedCategory}/{selectedPath || '(root)'}</span>
+          </p>
         </div>
 
         <div className="bg-[#1a1a1a]">
           <Dashboard
             uppy={uppy}
             width="100%"
-            height={400}
+            height={350}
             theme="dark"
             showProgressDetails={true}
             proudlyDisplayPoweredByUppy={false}

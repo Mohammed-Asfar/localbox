@@ -386,6 +386,8 @@ function App() {
         isOpen={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)}
         onUploadComplete={handleUploadComplete}
+        currentCategory={currentCategory}
+        currentPath={currentPath}
       />
 
       <DeleteModal 
