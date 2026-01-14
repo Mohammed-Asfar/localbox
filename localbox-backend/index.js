@@ -187,6 +187,75 @@ app.delete('/api/files/:category/:filename', (req, res) => {
     }
 });
 
+// API: Rename file
+app.put('/api/files/:category/:filename', (req, res) => {
+    const { category, filename } = req.params;
+    const { newName } = req.body;
+
+    if (!newName || newName.trim() === '') {
+        return res.status(400).json({ error: 'New name is required' });
+    }
+
+    const oldPath = path.join(STORAGE_DIR, category, filename);
+    const newPath = path.join(STORAGE_DIR, category, newName.trim());
+
+    if (!fs.existsSync(oldPath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    if (fs.existsSync(newPath)) {
+        return res.status(409).json({ error: 'A file with this name already exists' });
+    }
+
+    try {
+        fs.renameSync(oldPath, newPath);
+        console.log(`✏️ Renamed: ${category}/${filename} -> ${newName}`);
+        res.json({ success: true, message: 'File renamed', newName: newName.trim() });
+    } catch (error) {
+        console.error('Error renaming file:', error);
+        res.status(500).json({ error: 'Failed to rename file' });
+    }
+});
+
+// API: Move file to different category
+app.patch('/api/files/:category/:filename/move', (req, res) => {
+    const { category, filename } = req.params;
+    const { newCategory } = req.body;
+
+    if (!newCategory || !getCategories().includes(newCategory)) {
+        return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    if (category === newCategory) {
+        return res.status(400).json({ error: 'File is already in this category' });
+    }
+
+    const oldPath = path.join(STORAGE_DIR, category, filename);
+    const newPath = path.join(STORAGE_DIR, newCategory, filename);
+
+    if (!fs.existsSync(oldPath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    if (fs.existsSync(newPath)) {
+        return res.status(409).json({ error: 'A file with this name already exists in the target category' });
+    }
+
+    try {
+        fs.renameSync(oldPath, newPath);
+        console.log(`📦 Moved: ${category}/${filename} -> ${newCategory}/${filename}`);
+        res.json({ success: true, message: 'File moved', newCategory });
+    } catch (error) {
+        console.error('Error moving file:', error);
+        res.status(500).json({ error: 'Failed to move file' });
+    }
+});
+
+// API: Get available categories (for move dropdown)
+app.get('/api/categories', (req, res) => {
+    res.json({ categories: getCategories() });
+});
+
 // Get local IP address
 function getLocalIP() {
     const os = require('os');

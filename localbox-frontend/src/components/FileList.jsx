@@ -1,4 +1,4 @@
-import { MoreHorizontal, Download, Trash2, Eye, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive } from 'lucide-react';
+import { Download, Trash2, Eye, Pencil, FolderInput, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive } from 'lucide-react';
 import { canPreview } from './PreviewModal';
 
 const getFileIcon = (category) => {
@@ -12,7 +12,7 @@ const getFileIcon = (category) => {
   }
 };
 
-function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
+function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, onMove, selectedFiles, onSelectionChange }) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -48,6 +48,30 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
     }
   };
 
+  const isSelected = (file) => {
+    return selectedFiles.some(f => f.name === file.name && f.category === file.category);
+  };
+
+  const handleCheckboxChange = (e, file) => {
+    e.stopPropagation();
+    if (isSelected(file)) {
+      onSelectionChange(selectedFiles.filter(f => !(f.name === file.name && f.category === file.category)));
+    } else {
+      onSelectionChange([...selectedFiles, file]);
+    }
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      onSelectionChange(files);
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const allSelected = files.length > 0 && selectedFiles.length === files.length;
+  const someSelected = selectedFiles.length > 0 && selectedFiles.length < files.length;
+
   if (files.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 pb-20">
@@ -65,24 +89,42 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
       <table className="w-full text-left text-sm border-separate border-spacing-0">
         <thead className="sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10 text-zinc-500 font-medium">
           <tr>
-            <th className="px-4 md:px-6 py-3 border-b border-white/5 w-full md:w-[50%]">Name</th>
-            <th className="hidden md:table-cell px-6 py-3 border-b border-white/5">Date</th>
-            <th className="hidden sm:table-cell px-6 py-3 border-b border-white/5">Size</th>
-            <th className="px-4 md:px-6 py-3 border-b border-white/5 text-right">Actions</th>
+            <th className="px-4 py-3 border-b border-white/5 w-10">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                onChange={handleSelectAll}
+                className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+              />
+            </th>
+            <th className="px-2 md:px-4 py-3 border-b border-white/5 w-full md:w-[45%]">Name</th>
+            <th className="hidden md:table-cell px-4 py-3 border-b border-white/5">Date</th>
+            <th className="hidden sm:table-cell px-4 py-3 border-b border-white/5">Size</th>
+            <th className="px-2 md:px-4 py-3 border-b border-white/5 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
           {files.map((file, idx) => {
             const { icon: Icon, color } = getFileIcon(file.category);
             const isPreviewable = canPreview(file.name);
+            const selected = isSelected(file);
             
             return (
               <tr 
                 key={`${file.name}-${idx}`} 
                 onClick={() => handleRowClick(file)}
-                className={`group hover:bg-white/[0.02] transition-colors ${isPreviewable ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group transition-colors ${isPreviewable ? 'cursor-pointer' : 'cursor-default'} ${selected ? 'bg-blue-500/10' : 'hover:bg-white/[0.02]'}`}
               >
-                <td className="px-4 md:px-6 py-3 max-w-[200px] sm:max-w-none">
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={(e) => handleCheckboxChange(e, file)}
+                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  />
+                </td>
+                <td className="px-2 md:px-4 py-3 max-w-[150px] sm:max-w-none">
                   <div className="flex items-center gap-3">
                     <Icon className={`w-5 h-5 ${color} flex-shrink-0`} />
                     <div className="min-w-0">
@@ -92,7 +134,6 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
                               <Eye className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                             )}
                         </div>
-                        {/* Mobile-only info subtext */}
                         <div className="md:hidden text-xs text-zinc-500 flex gap-2">
                              <span>{formatBytes(file.size)}</span>
                              <span>•</span>
@@ -101,33 +142,47 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview }) {
                     </div>
                   </div>
                 </td>
-                <td className="hidden md:table-cell px-6 py-3 text-zinc-500 whitespace-nowrap">
+                <td className="hidden md:table-cell px-4 py-3 text-zinc-500 whitespace-nowrap">
                   {formatDate(file.createdAt)}
                 </td>
-                <td className="hidden sm:table-cell px-6 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
+                <td className="hidden sm:table-cell px-4 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
                   {formatBytes(file.size)}
                 </td>
-                <td className="px-4 md:px-6 py-3 text-right whitespace-nowrap">
-                  <div className="flex items-center justify-end gap-1 md:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <td className="px-2 md:px-4 py-3 text-right whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     {isPreviewable && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); onPreview(file); }}
-                        className="p-2 md:p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                         title="Preview"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                     )}
                     <button 
+                      onClick={(e) => { e.stopPropagation(); onRename(file); }}
+                      className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      title="Rename"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onMove(file); }}
+                      className="p-1.5 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                      title="Move"
+                    >
+                      <FolderInput className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={(e) => handleDownload(e, file)}
-                      className="p-2 md:p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
                       title="Download"
                     >
                       <Download className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onDelete(file.category, file.name); }}
-                      className="p-2 md:p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
