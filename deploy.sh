@@ -1,29 +1,35 @@
 #!/bin/bash
+set -e
 
 echo "🚀 Starting LocalBox Deployment..."
 
+BASE_DIR="$HOME/localbox"
+FRONTEND_DIR="$BASE_DIR/localbox-frontend"
+BACKEND_DIR="$BASE_DIR/localbox-backend"
+
 # 1. Build Frontend
 echo "📦 Building Frontend..."
-cd localbox-frontend
+cd "$FRONTEND_DIR"
 npm install
 npm run build
-if [ $? -ne 0 ]; then
-    echo "❌ Frontend build failed!"
-    exit 1
-fi
-cd ..
 
 # 2. Prepare Backend Public Folder
 echo "🧹 Cleaning old backend files..."
-mkdir -p localbox-backend/public
-rm -rf localbox-backend/public/*
+mkdir -p "$BACKEND_DIR/public"
+rm -rf "$BACKEND_DIR/public"/*
 
 # 3. Copy Build Files
 echo "🚚 Copying build files to backend..."
-cp -r localbox-frontend/dist/* localbox-backend/public/
+cp -r "$FRONTEND_DIR/dist/"* "$BACKEND_DIR/public/"
 
-# 4. Start Backend
-echo "🚀 Starting Backend Server..."
-cd localbox-backend
-npm install
-npm start
+# 4. Install backend dependencies
+echo "📦 Installing backend dependencies..."
+cd "$BACKEND_DIR"
+npm install --production
+
+# 5. Restart services (IMPORTANT)
+echo "🔁 Restarting LocalBox services..."
+sudo systemctl restart localbox
+sudo systemctl restart localbox-tusd
+
+echo "✅ LocalBox deployment completed successfully!"
