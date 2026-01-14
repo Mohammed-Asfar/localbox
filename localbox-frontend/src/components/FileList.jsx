@@ -251,13 +251,14 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                   {isFolder ? '—' : formatBytes(item.size)}
                 </td>
                 <td className="px-2 md:px-4 py-3 text-right whitespace-nowrap">
-                  <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-0.5 md:gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     {!isFolder && (
                       <>
+                        {/* Desktop-only buttons */}
                         {isPreviewable && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); onPreview(item); }}
-                            className="p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg"
+                            className="hidden md:block p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg"
                             title="Preview"
                           >
                             <Eye className="w-4 h-4" />
@@ -265,18 +266,19 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                         )}
                         <button 
                           onClick={(e) => { e.stopPropagation(); onRename(item); }}
-                          className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
+                          className="hidden md:block p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
                           title="Rename"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); onMove(item); }}
-                          className="p-1.5 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg"
+                          className="hidden md:block p-1.5 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg"
                           title="Move"
                         >
                           <FolderInput className="w-4 h-4" />
                         </button>
+                        {/* Always visible buttons */}
                         <button 
                           onClick={(e) => handleDownload(e, item)}
                           className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
