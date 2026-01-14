@@ -169,17 +169,34 @@ app.delete('/api/files/:category/:filename', (req, res) => {
     }
 });
 
+// Get local IP address
+function getLocalIP() {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Skip internal (loopback) and non-IPv4 addresses
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
 // Start server
 const HOST = '0.0.0.0';
+const LOCAL_IP = getLocalIP();
 app.listen(PORT, HOST, () => {
     console.log(`
-╔═══════════════════════════════════════════════════════╗
-║                                                       ║
-║   📦 LocalBox is running!                             ║
-║                                                       ║
-║   🌐 Web UI:  http://${HOST}:${PORT}                    ║
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║   📦 LocalBox is running!                                  ║
+║                                                            ║
+║   🌐 Local:   http://localhost:${PORT}                       ║
+║   🌐 Network: http://${LOCAL_IP}:${PORT}
 ║   📁 Storage: ${STORAGE_DIR}
-║                                                       ║
-╚═══════════════════════════════════════════════════════╝
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
   `);
 });
