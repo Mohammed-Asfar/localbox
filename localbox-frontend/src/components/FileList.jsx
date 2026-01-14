@@ -99,7 +99,6 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
           {files.map((item, idx) => {
             const { icon: Icon, color } = getFileIcon(item.category, item.type);
             const isFolder = item.type === 'folder';
-            const isPreviewable = !isFolder && canPreview(item.name);
             const selected = !isFolder && isSelected(item);
             const isImage = !isFolder && isImageFile(item.name);
             const thumbnailUrl = isImage ? `/api/download/${item.category}/${encodeURIComponent(item.path || item.name)}` : null;
@@ -121,10 +120,19 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                   theme === 'light' ? 'bg-gray-50' : 'bg-zinc-900'
                 }`}>
                   {thumbnailUrl ? (
-                    <img src={thumbnailUrl} alt={item.name} className="w-full h-full object-cover" />
-                  ) : (
+                    <img 
+                      src={thumbnailUrl} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                    />
+                  ) : null}
+                  {/* Fallback icon (shown if no thumbnail or on error) */}
+                  <div className={`absolute inset-0 flex items-center justify-center ${thumbnailUrl ? 'hidden' : ''}`}>
                     <Icon className={`w-12 h-12 ${color}`} />
-                  )}
+                  </div>
                   
                   {/* Checkbox */}
                   {!isFolder && (
