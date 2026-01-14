@@ -219,7 +219,7 @@ function showSpeedDisplay() {
     if (!speedEl) {
         speedEl = document.createElement('div');
         speedEl.id = 'upload-speed-display';
-        speedEl.className = 'fixed top-20 right-4 bg-dark-800 border border-dark-600 rounded-xl px-4 py-3 shadow-2xl z-50 min-w-[200px]';
+        speedEl.className = 'fixed bottom-4 left-4 bg-dark-800/95 backdrop-blur-sm border border-dark-600 rounded-xl px-4 py-3 shadow-2xl z-50 min-w-[200px]';
         speedEl.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
