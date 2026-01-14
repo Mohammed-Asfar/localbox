@@ -1,18 +1,25 @@
 {
-  "name": "localbox-backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "express": "^5.2.1",
-    "fs-extra": "^11.3.3",
-    "mime-types": "^3.0.2"
-  }
+    "name": "localbox",
+    "version": "1.0.0",
+    "description": "Self-hosted resumable file storage platform",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node --watch index.js"
+    },
+    "keywords": [
+        "file-storage",
+        "self-hosted",
+        "resumable-upload",
+        "tus"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@tus/file-store": "^1.5.0",
+        "@tus/server": "^1.8.0",
+        "cors": "^2.8.5",
+        "express": "^4.21.0",
+        "mime-types": "^2.1.35"
+    }
 }
