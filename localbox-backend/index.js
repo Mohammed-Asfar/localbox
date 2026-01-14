@@ -213,6 +213,7 @@ app.delete('/api/folders/:category/*', (req, res) => {
 
 // API: Get storage statistics
 app.get('/api/stats', async (req, res) => {
+    const os = require('os');
     const stats = {};
     let totalSize = 0;
     let totalFiles = 0;
@@ -246,23 +247,32 @@ app.get('/api/stats', async (req, res) => {
 
     let diskInfo = { free: 0, size: 0 };
     try {
-        // check-disk-space returns { diskPath, free, size }
         const checkDiskSpace = require('check-disk-space').default;
         diskInfo = await checkDiskSpace(STORAGE_DIR);
     } catch (error) {
         console.error('Error fetching disk space:', error);
     }
 
+    // RAM stats
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+
     res.json({
         categories: stats,
         total: {
             files: totalFiles,
-            size: totalSize, // Size of files managed by app
+            size: totalSize,
         },
         disk: {
             free: diskInfo.free,
             total: diskInfo.size,
             used: diskInfo.size - diskInfo.free
+        },
+        memory: {
+            total: totalMem,
+            free: freeMem,
+            used: usedMem
         }
     });
 });

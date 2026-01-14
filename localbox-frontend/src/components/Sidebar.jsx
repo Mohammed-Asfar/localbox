@@ -7,6 +7,7 @@ import {
   Music, 
   Folder,
   HardDrive,
+  Cpu,
   X
 } from 'lucide-react';
 
@@ -38,9 +39,14 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
     shadow-2xl md:shadow-none z-40
   `;
 
-  const percentUsed = () => {
+  const diskPercent = () => {
     if (!storageStats.disk || storageStats.disk.total === 0) return 0;
     return (storageStats.disk.used / storageStats.disk.total) * 100;
+  };
+
+  const memPercent = () => {
+    if (!storageStats.memory || storageStats.memory.total === 0) return 0;
+    return (storageStats.memory.used / storageStats.memory.total) * 100;
   };
 
   return (
@@ -109,30 +115,57 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
           })}
         </nav>
 
-        {/* Storage Widget */}
-        <div className="mt-auto pt-6 px-2 pb-6">
-          <div className={`p-4 rounded-2xl ${isDark ? 'bg-zinc-900 border border-white/5' : 'bg-white border border-gray-200 shadow-sm'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`p-1.5 rounded-full ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-gray-100 text-gray-500'}`}>
-                <HardDrive className="w-3 h-3" />
-              </div>
-              <span className={`text-xs font-medium ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>Storage Used</span>
+        {/* System Stats Widget */}
+        <div className="mt-auto pt-4 px-2 pb-4 space-y-3">
+          {/* Disk Usage */}
+          <div className={`p-3 rounded-xl ${isDark ? 'bg-zinc-900 border border-white/5' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <HardDrive className={`w-3.5 h-3.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`} />
+              <span className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Disk</span>
+              <span className={`ml-auto text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {diskPercent().toFixed(0)}%
+              </span>
             </div>
-            
-            <div className="flex items-baseline gap-1 mb-2">
-                <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                 {formatBytes(storageStats.disk?.used || 0)}
-                </span>
-                <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-                 / {formatBytes(storageStats.disk?.total || 0)}
-                </span>
-            </div>
-            
             <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-gray-200'}`}>
               <div 
-                className="h-full bg-blue-600 rounded-full transition-all duration-500" 
-                style={{ width: `${percentUsed()}%` }}
+                className="h-full bg-blue-500 rounded-full transition-all duration-500" 
+                style={{ width: `${diskPercent()}%` }}
               /> 
+            </div>
+            <div className="flex justify-between mt-1.5">
+              <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {formatBytes(storageStats.disk?.used || 0)} used
+              </span>
+              <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {formatBytes(storageStats.disk?.total || 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* RAM Usage */}
+          <div className={`p-3 rounded-xl ${isDark ? 'bg-zinc-900 border border-white/5' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Cpu className={`w-3.5 h-3.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`} />
+              <span className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>RAM</span>
+              <span className={`ml-auto text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {memPercent().toFixed(0)}%
+              </span>
+            </div>
+            <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-gray-200'}`}>
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  memPercent() > 80 ? 'bg-red-500' : memPercent() > 60 ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${memPercent()}%` }}
+              /> 
+            </div>
+            <div className="flex justify-between mt-1.5">
+              <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {formatBytes(storageStats.memory?.used || 0)} used
+              </span>
+              <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                {formatBytes(storageStats.memory?.total || 0)}
+              </span>
             </div>
           </div>
         </div>
