@@ -66,38 +66,149 @@ const tusServer = new Server({
 app.all('/files', (req, res) => tusServer.handle(req, res));
 app.all('/files/*', (req, res) => tusServer.handle(req, res));
 
-// API: List files by category
+// API: List files and folders by category and path
 app.get('/api/files', (req, res) => {
     const category = req.query.category;
-    const categoriesToList = category && category !== 'all' ? [category] : getCategories();
+    const subPath = req.query.path || ''; // e.g., 'vacation/2024'
+    
+    // If no category specified, list all from all categories (flat)
+    if (!category || category === 'all') {
+        const files = [];
+        getCategories().forEach(cat => {
+            const catDir = path.join(STORAGE_DIR, cat);
+            if (fs.existsSync(catDir)) {
+                const catFiles = fs.readdirSync(catDir)
+                    .filter(name => {
+                        const fPath = path.join(catDir, name);
+                        return fs.statSync(fPath).isFile();
+                    })
+                    .map(filename => {
+                        const filePath = path.join(catDir, filename);
+                        const stats = fs.statSync(filePath);
+                        return {
+                            name: filename,
+                            category: cat,
+                            type: 'file',
+                            size: stats.size,
+                            createdAt: stats.birthtime,
+                            modifiedAt: stats.mtime,
+                            path: '',
+                        };
+                    });
+                files.push(...catFiles);
+            }
+        });
+        files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return res.json({ files, total: files.length, currentPath: '', parentPath: null });
+    }
 
-    const files = [];
+    // Specific category with optional path
+    const targetDir = subPath 
+        ? path.join(STORAGE_DIR, category, subPath)
+        : path.join(STORAGE_DIR, category);
 
-    categoriesToList.forEach(cat => {
-        const catDir = path.join(STORAGE_DIR, cat);
-        if (fs.existsSync(catDir)) {
-            const catFiles = fs.readdirSync(catDir).map(filename => {
-                const filePath = path.join(catDir, filename);
-                const stats = fs.statSync(filePath);
-                return {
-                    name: filename,
-                    category: cat,
-                    size: stats.size,
-                    createdAt: stats.birthtime,
-                    modifiedAt: stats.mtime,
-                };
-            });
-            files.push(...catFiles);
-        }
+    if (!fs.existsSync(targetDir)) {
+        return res.json({ files: [], total: 0, currentPath: subPath, parentPath: getParentPath(subPath) });
+    }
+
+    const items = [];
+    const entries = fs.readdirSync(targetDir);
+
+    entries.forEach(name => {
+        const fullPath = path.join(targetDir, name);
+        const stats = fs.statSync(fullPath);
+        const isFolder = stats.isDirectory();
+
+        items.push({
+            name,
+            category,
+            type: isFolder ? 'folder' : 'file',
+            size: isFolder ? 0 : stats.size,
+            createdAt: stats.birthtime,
+            modifiedAt: stats.mtime,
+            path: subPath ? `${subPath}/${name}` : name,
+        });
     });
 
-    // Sort by most recent first
-    files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Sort: folders first, then files by date
+    items.sort((a, b) => {
+        if (a.type === 'folder' && b.type !== 'folder') return -1;
+        if (a.type !== 'folder' && b.type === 'folder') return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
     res.json({
-        files,
-        total: files.length,
+        files: items,
+        total: items.length,
+        currentPath: subPath,
+        parentPath: getParentPath(subPath),
     });
+});
+
+// Helper to get parent path
+function getParentPath(p) {
+    if (!p) return null;
+    const parts = p.split('/');
+    parts.pop();
+    return parts.join('/');
+}
+
+// API: Create folder
+app.post('/api/folders', (req, res) => {
+    const { category, path: subPath, name } = req.body;
+
+    if (!category || !name) {
+        return res.status(400).json({ error: 'Category and name are required' });
+    }
+
+    // Sanitize folder name
+    const safeName = name.replace(/[<>:"/\\|?*]/g, '').trim();
+    if (!safeName) {
+        return res.status(400).json({ error: 'Invalid folder name' });
+    }
+
+    const targetDir = subPath
+        ? path.join(STORAGE_DIR, category, subPath, safeName)
+        : path.join(STORAGE_DIR, category, safeName);
+
+    if (fs.existsSync(targetDir)) {
+        return res.status(409).json({ error: 'Folder already exists' });
+    }
+
+    try {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log(`📁 Created folder: ${category}/${subPath ? subPath + '/' : ''}${safeName}`);
+        res.json({ success: true, message: 'Folder created', name: safeName });
+    } catch (error) {
+        console.error('Error creating folder:', error);
+        res.status(500).json({ error: 'Failed to create folder' });
+    }
+});
+
+// API: Delete folder (must be empty)
+app.delete('/api/folders/:category/*', (req, res) => {
+    const category = req.params.category;
+    const folderPath = req.params[0]; // Everything after /folders/:category/
+
+    const targetDir = path.join(STORAGE_DIR, category, folderPath);
+
+    if (!fs.existsSync(targetDir)) {
+        return res.status(404).json({ error: 'Folder not found' });
+    }
+
+    const contents = fs.readdirSync(targetDir);
+    if (contents.length > 0) {
+        return res.status(400).json({ error: 'Folder is not empty' });
+    }
+
+    try {
+        fs.rmdirSync(targetDir);
+        console.log(`🗑️ Deleted folder: ${category}/${folderPath}`);
+        res.json({ success: true, message: 'Folder deleted' });
+    } catch (error) {
+        console.error('Error deleting folder:', error);
+        res.status(500).json({ error: 'Failed to delete folder' });
+    }
 });
 
 // API: Get storage statistics
