@@ -103,7 +103,7 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onCl
         </nav>
 
         {/* Storage Widget */}
-        <div className="mt-auto pt-6 px-2 pb-2">
+        <div className="mt-auto pt-6 px-2 pb-6">
           <div className="p-4 rounded-2xl bg-zinc-900 border border-white/5">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-full bg-zinc-800 text-zinc-400">
