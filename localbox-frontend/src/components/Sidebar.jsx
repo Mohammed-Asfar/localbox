@@ -6,7 +6,8 @@ import {
   Video, 
   Music, 
   Folder,
-  HardDrive
+  HardDrive,
+  X
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -19,7 +20,7 @@ const CATEGORIES = [
   { id: 'others', label: 'Others', icon: Folder },
 ];
 
-function Sidebar({ currentCategory, onCategoryChange, storageStats }) {
+function Sidebar({ currentCategory, onCategoryChange, storageStats, isOpen, onClose }) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -28,78 +29,107 @@ function Sidebar({ currentCategory, onCategoryChange, storageStats }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const percentUsed = (used) => {
-    // Assuming 100GB dummy limit for visualization or just show used
-    // Let's just return a visual bar width for now based on some arbitrary scale or 0
-    return 0; 
-  };
+  // Base classes always applied
+  const baseClasses = "bg-zinc-950 border-r border-white/5 flex flex-col p-4 transition-transform duration-300 ease-in-out z-40";
+  
+  // Responsive behavior: 
+  // - Mobile: Fixed position, slide in/out
+  // - Desktop: Static position, always visible
+  // We use `fixed top-0 bottom-0 left-0 w-64` for mobile overlay
+  // And `md:relative md:translate-x-0` for desktop
+  
+  const responsiveClasses = `
+    fixed inset-y-0 left-0 w-64 
+    ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+    md:translate-x-0 md:static md:h-auto
+    border-r border-white/10 shadow-2xl md:shadow-none
+  `;
 
   return (
-    <aside className="w-64 bg-zinc-950 border-r border-white/5 flex flex-col p-4">
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-2 mb-8 mt-2">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-          <HardDrive className="w-5 h-5 text-white" />
+    <>
+      <aside className={`${baseClasses} ${responsiveClasses}`}>
+        {/* Mobile Close Button */}
+        <div className="flex md:hidden justify-end mb-2">
+           <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white">
+             <X className="w-5 h-5" />
+           </button>
         </div>
-        <div>
-          <h1 className="font-bold text-white tracking-wide">LocalBox</h1>
-          <p className="text-[10px] text-zinc-500 font-medium">SERVER STORAGE</p>
+
+        {/* Brand */}
+        <div className="flex items-center gap-3 px-2 mb-8 mt-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <HardDrive className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="font-bold text-white tracking-wide">LocalBox</h1>
+            <p className="text-[10px] text-zinc-500 font-medium">SERVER STORAGE</p>
+          </div>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1">
-        <p className="px-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Library</p>
-        
-        {CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          const isActive = currentCategory === cat.id;
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1">
+          <p className="px-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Library</p>
+          
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = currentCategory === cat.id;
 
-          return (
-            <button
-              key={cat.id}
-              onClick={() => onCategoryChange(cat.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative
-                ${isActive 
-                  ? 'text-white bg-white/10' 
-                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                }`}
-            >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-r-full" />
-              )}
-              <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
-              {cat.label}
-              
-              {storageStats[cat.id] && storageStats[cat.id].count > 0 && (
-                <span className="ml-auto text-xs text-zinc-600 group-hover:text-zinc-500">
-                  {storageStats[cat.id].count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                   onCategoryChange(cat.id);
+                   onClose(); // Close on mobile selection
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative
+                  ${isActive 
+                    ? 'text-white bg-white/10' 
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-r-full" />
+                )}
+                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+                {cat.label}
+                
+                {storageStats[cat.id] && storageStats[cat.id].count > 0 && (
+                  <span className="ml-auto text-xs text-zinc-600 group-hover:text-zinc-500">
+                    {storageStats[cat.id].count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* Storage Widget */}
-      <div className="mt-auto pt-6 px-2">
-        <div className="p-4 rounded-2xl bg-zinc-900 border border-white/5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-full bg-zinc-800 text-zinc-400">
-              <HardDrive className="w-3 h-3" />
+        {/* Storage Widget */}
+        <div className="mt-auto pt-6 px-2">
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 rounded-full bg-zinc-800 text-zinc-400">
+                <HardDrive className="w-3 h-3" />
+              </div>
+              <span className="text-xs font-medium text-zinc-300">Storage Used</span>
             </div>
-            <span className="text-xs font-medium text-zinc-300">Storage Used</span>
-          </div>
-          <div className="text-lg font-bold text-white mb-1">
-            {formatBytes(storageStats.total?.size || 0)}
-          </div>
-          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-600 w-1/4 rounded-full" /> 
-            {/* Hardcoded progress for visual style from screenshot */}
+            <div className="text-lg font-bold text-white mb-1">
+              {formatBytes(storageStats.total?.size || 0)}
+            </div>
+            <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 w-1/4 rounded-full" /> 
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+
+      {/* Backdrop for Mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+          onClick={onClose}
+        />
+      )}
+    </>
   );
 }
 

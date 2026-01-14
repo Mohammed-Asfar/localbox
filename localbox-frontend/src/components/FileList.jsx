@@ -12,6 +12,7 @@ const getFileIcon = (category) => {
 };
 
 function FileList({ files, isLoading, onDelete, onRefresh }) {
+  // ... (Keep existing helpers) ...
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -29,7 +30,7 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
       minute: '2-digit'
     });
   };
-
+  
   const handleDownload = (e, file) => {
     e.stopPropagation();
     const url = `/api/download/${file.category}/${encodeURIComponent(file.name)}`;
@@ -58,10 +59,10 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
       <table className="w-full text-left text-sm border-separate border-spacing-0">
         <thead className="sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10 text-zinc-500 font-medium">
           <tr>
-            <th className="px-6 py-3 border-b border-white/5 w-[50%]">Name</th>
-            <th className="px-6 py-3 border-b border-white/5">Date</th>
-            <th className="px-6 py-3 border-b border-white/5">Size</th>
-            <th className="px-6 py-3 border-b border-white/5 text-right">Actions</th>
+            <th className="px-4 md:px-6 py-3 border-b border-white/5 w-full md:w-[50%]">Name</th>
+            <th className="hidden md:table-cell px-6 py-3 border-b border-white/5">Date</th>
+            <th className="hidden sm:table-cell px-6 py-3 border-b border-white/5">Size</th>
+            <th className="px-4 md:px-6 py-3 border-b border-white/5 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
@@ -73,32 +74,40 @@ function FileList({ files, isLoading, onDelete, onRefresh }) {
                 key={`${file.name}-${idx}`} 
                 className="group hover:bg-white/[0.02] transition-colors cursor-default"
               >
-                <td className="px-6 py-3">
+                <td className="px-4 md:px-6 py-3 max-w-[200px] sm:max-w-none">
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-5 h-5 ${color}`} />
-                    <span className="text-zinc-200 font-medium group-hover:text-white transition-colors">
-                      {file.name}
-                    </span>
+                    <Icon className={`w-5 h-5 ${color} flex-shrink-0`} />
+                    <div className="min-w-0">
+                        <div className="text-zinc-200 font-medium group-hover:text-white transition-colors truncate">
+                            {file.name}
+                        </div>
+                        {/* Mobile-only info subtext */}
+                        <div className="md:hidden text-xs text-zinc-500 flex gap-2">
+                             <span>{formatBytes(file.size)}</span>
+                             <span>•</span>
+                             <span>{new Date(file.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
                   </div>
                 </td>
-                <td className="px-6 py-3 text-zinc-500 whitespace-nowrap">
+                <td className="hidden md:table-cell px-6 py-3 text-zinc-500 whitespace-nowrap">
                   {formatDate(file.createdAt)}
                 </td>
-                <td className="px-6 py-3 text-zinc-500 font-mono text-xs">
+                <td className="hidden sm:table-cell px-6 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
                   {formatBytes(file.size)}
                 </td>
-                <td className="px-6 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <td className="px-4 md:px-6 py-3 text-right whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-1 md:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={(e) => handleDownload(e, file)}
-                      className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      className="p-2 md:p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
                       title="Download"
                     >
                       <Download className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onDelete(file.category, file.name); }}
-                      className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 md:p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

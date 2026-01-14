@@ -17,6 +17,7 @@ function App() {
   
   // UI State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, file: null, category: null });
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -45,12 +46,12 @@ function App() {
   const handleCategoryChange = (category) => {
     setCurrentCategory(category);
     fetchData(category);
+    setIsMobileMenuOpen(false); // Close menu on selection
   };
-
+  
+  // ... (Keep existing handlers for upload and delete) ...
   const handleUploadComplete = () => {
     fetchData();
-    // Don't close modal automatically to allow multiple uploads, or close it?
-    // Let's keep it open but refresh the background list
   };
 
   const handleDeleteRequest = (category, filename) => {
@@ -73,20 +74,23 @@ function App() {
 
   return (
     <div className="flex h-screen bg-black text-zinc-200 overflow-hidden font-sans selection:bg-blue-500/30">
-      {/* 1. Sidebar */}
+      {/* 1. Sidebar (Pass mobile state) */}
       <Sidebar 
         currentCategory={currentCategory} 
         onCategoryChange={handleCategoryChange}
         storageStats={stats.categories || {}}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#0F0F10] m-2 ml-0 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0F0F10] md:m-2 md:ml-0 md:rounded-2xl border-l md:border border-white/5 shadow-2xl relative overflow-hidden transition-all duration-300">
         
-        {/* Header */}
+        {/* Header (Pass onMenuClick) */}
         <Header 
           currentPath={`Library / ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`}
           onUploadClick={() => setIsUploadOpen(true)}
+          onMenuClick={() => setIsMobileMenuOpen(true)}
         />
 
         {/* File List */}
