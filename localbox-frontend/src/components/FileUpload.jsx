@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import Uppy from '@uppy/core';
-import { Dashboard } from '@uppy/react';
+import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
 import { Upload, Zap } from 'lucide-react';
 
