@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -15,6 +15,7 @@ function App() {
   const [stats, setStats] = useState({ total: { files: 0, size: 0 } });
   const [currentCategory, setCurrentCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // UI State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -44,9 +45,19 @@ function App() {
     fetchData();
   }, []);
 
+  // Filter files based on search query
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery.trim()) return files;
+    const query = searchQuery.toLowerCase();
+    return files.filter(file => 
+      file.name.toLowerCase().includes(query)
+    );
+  }, [files, searchQuery]);
+
   // Handlers
   const handleCategoryChange = (category) => {
     setCurrentCategory(category);
+    setSearchQuery(''); // Clear search when changing category
     fetchData(category);
     setIsMobileMenuOpen(false);
   };
@@ -93,14 +104,16 @@ function App() {
         
         {/* Header */}
         <Header 
-          currentPath={`Library / ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`}
+          currentPath={searchQuery ? `Search: "${searchQuery}"` : `Library / ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`}
           onUploadClick={() => setIsUploadOpen(true)}
           onMenuClick={() => setIsMobileMenuOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
 
         {/* File List */}
         <FileList 
-          files={files} 
+          files={filteredFiles} 
           isLoading={isLoading} 
           onDelete={handleDeleteRequest} 
           onRefresh={() => fetchData(currentCategory)}
@@ -109,7 +122,7 @@ function App() {
         
         {/* Footer */}
         <div className="h-8 bg-zinc-950/50 border-t border-white/5 flex items-center justify-center text-xs text-zinc-500 font-medium select-none">
-           {files.length} items • {stats.total?.size ? (stats.total.size / 1024 / 1024).toFixed(1) : 0} MB
+           {filteredFiles.length} {searchQuery ? 'results' : 'items'} • {stats.total?.size ? (stats.total.size / 1024 / 1024).toFixed(1) : 0} MB
         </div>
       </div>
 
@@ -131,7 +144,7 @@ function App() {
       <PreviewModal
         isOpen={!!previewFile}
         file={previewFile}
-        files={files}
+        files={filteredFiles}
         onClose={() => setPreviewFile(null)}
         onNavigate={(file) => setPreviewFile(file)}
       />

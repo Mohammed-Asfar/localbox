@@ -1,6 +1,6 @@
-import { Search, Bell, Settings, FilePlus, Menu } from 'lucide-react';
+import { Search, Bell, Settings, FilePlus, Menu, X } from 'lucide-react';
 
-function Header({ currentPath = 'Home', onUploadClick, onMenuClick }) {
+function Header({ currentPath = 'Home', onUploadClick, onMenuClick, searchQuery, onSearchChange }) {
   return (
     <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm">
       {/* Left: Menu & Breadcrumb */}
@@ -29,15 +29,25 @@ function Header({ currentPath = 'Home', onUploadClick, onMenuClick }) {
         </div>
       </div>
 
-      {/* Center: Search (Collapsible on mobile maybe? For now just hidden on small screens if too small) */}
+      {/* Center: Search */}
       <div className="flex-1 max-w-md mx-4 md:mx-8 hidden sm:block">
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
           <input 
             type="text" 
             placeholder="Search files..." 
-            className="w-full bg-zinc-900/50 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 focus:bg-zinc-900 transition-all placeholder:text-zinc-600"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full bg-zinc-900/50 border border-white/5 rounded-xl py-2 pl-10 pr-10 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 focus:bg-zinc-900 transition-all placeholder:text-zinc-600"
           />
+          {searchQuery && (
+            <button 
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
