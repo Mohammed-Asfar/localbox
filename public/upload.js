@@ -32,7 +32,7 @@ const uppy = new Uppy.Uppy({
     .use(Uppy.Tus, {
         endpoint: '/files',
         retryDelays: [0, 1000, 3000, 5000], // Retry delays in ms
-        chunkSize: 5 * 1024 * 1024, // 5MB chunks
+        chunkSize: 100 * 1024 * 1024, // 100MB chunks
         removeFingerprintOnSuccess: true,
         // Store uploads in localStorage for resume capability
         storeFingerprintForResuming: true,
