@@ -94,6 +94,9 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
     return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
   };
 
+  // Track bytes per file for accurate multi-file speed
+  const fileBytesRef = useRef({});
+  
   useEffect(() => {
     uppy.on('upload', () => {
       setIsUploading(true);
@@ -101,26 +104,39 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       setEta(null);
       lastProgress.current = { bytes: 0, time: Date.now() };
       speedHistory.current = [];
+      fileBytesRef.current = {};
     });
 
+    // Track per-file progress and sum for total
     uppy.on('upload-progress', (file, progress) => {
+      // Store current progress for this file
+      fileBytesRef.current[file.id] = progress.bytesUploaded;
+      
+      // Calculate total bytes uploaded across all files
+      const totalUploaded = Object.values(fileBytesRef.current).reduce((a, b) => a + b, 0);
+      
+      // Get total size of all files
+      const files = uppy.getFiles();
+      const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+
       const now = Date.now();
       const timeDiff = (now - lastProgress.current.time) / 1000;
 
-      if (timeDiff >= 0.5 && progress.bytesUploaded > 0) {
-        const bytesDiff = progress.bytesUploaded - lastProgress.current.bytes;
+      if (timeDiff >= 0.5 && totalUploaded > 0) {
+        const bytesDiff = totalUploaded - lastProgress.current.bytes;
         if (bytesDiff > 0) {
           const instantSpeed = bytesDiff / timeDiff;
           speedHistory.current.push(instantSpeed);
           if (speedHistory.current.length > 5) speedHistory.current.shift();
           const avgSpeed = speedHistory.current.reduce((a, b) => a + b, 0) / speedHistory.current.length;
           setUploadSpeed(avgSpeed);
-          const remaining = progress.bytesTotal - progress.bytesUploaded;
-          if (avgSpeed > 0) {
+          
+          const remaining = totalSize - totalUploaded;
+          if (avgSpeed > 0 && remaining > 0) {
             setEta(remaining / avgSpeed);
           }
         }
-        lastProgress.current = { bytes: progress.bytesUploaded, time: now };
+        lastProgress.current = { bytes: totalUploaded, time: now };
       }
     });
 
@@ -128,6 +144,7 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       setIsUploading(false);
       setUploadSpeed(0);
       setEta(null);
+      fileBytesRef.current = {};
       if (result.successful.length > 0) {
         onUploadComplete?.();
       }
@@ -137,6 +154,7 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       setIsUploading(false);
       setUploadSpeed(0);
       setEta(null);
+      fileBytesRef.current = {};
     });
 
     return () => uppy.clear();
