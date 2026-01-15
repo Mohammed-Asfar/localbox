@@ -130,6 +130,8 @@ function App() {
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Don't show overlay if upload modal is already open
+    if (isUploadOpen) return;
     dragCounter.current++;
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
       setIsDragging(true);
@@ -139,6 +141,7 @@ function App() {
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isUploadOpen) return;
     dragCounter.current--;
     if (dragCounter.current === 0) {
       setIsDragging(false);
@@ -399,7 +402,12 @@ function App() {
       {/* Modals */}
       <FileUpload 
         isOpen={isUploadOpen} 
-        onClose={() => { setIsUploadOpen(false); setDroppedFiles(null); }}
+        onClose={() => { 
+          setIsUploadOpen(false); 
+          setDroppedFiles(null); 
+          setIsDragging(false); 
+          dragCounter.current = 0; 
+        }}
         onUploadComplete={handleUploadComplete}
         currentCategory={currentCategory}
         currentPath={currentPath}
