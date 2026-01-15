@@ -4,6 +4,23 @@ A self-hosted file storage and management application with a modern, Mac-like in
 
 ![LocalBox](https://img.shields.io/badge/LocalBox-v1.0-blue) ![Node.js](https://img.shields.io/badge/Node.js-18+-green) ![React](https://img.shields.io/badge/React-18-blue)
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="./screenshots/dashboard.png" alt="Dashboard" width="90%" />
+</p>
+
+<p align="center"><em>Dashboard - File list with sidebar navigation</em></p>
+
+| Grid View | Upload Dialog |
+|-----------|---------------|
+| ![Grid View](./screenshots/girdview.png) | ![Upload](./screenshots/upload_dialog.png) |
+
+| Image Preview | Video Preview |
+|---------------|---------------|
+| ![Image Preview](./screenshots/preview_image.png) | ![Video Preview](./screenshots/preview_video.png) |
+
+
 ## ✨ Features
 
 ### File Management
