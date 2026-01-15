@@ -1,16 +1,34 @@
 import { Download, Trash2, Eye, Pencil, FolderInput, File as FileIcon, Image as ImageIcon, FileText, Video as VideoIcon, Music, Archive, Folder, ChevronRight } from 'lucide-react';
 import { canPreview } from './PreviewModal';
 
-const getFileIcon = (category, type) => {
+// Detect file type from extension for accurate icons
+const getFileIcon = (filename, type) => {
   if (type === 'folder') return { icon: Folder, color: 'text-yellow-400' };
-  switch (category) {
-    case 'images': return { icon: ImageIcon, color: 'text-purple-400' };
-    case 'documents': return { icon: FileText, color: 'text-blue-400' };
-    case 'videos': return { icon: VideoIcon, color: 'text-rose-400' };
-    case 'audio': return { icon: Music, color: 'text-emerald-400' };
-    case 'archives': return { icon: Archive, color: 'text-amber-400' };
-    default: return { icon: FileIcon, color: 'text-zinc-400' };
+  
+  const ext = filename.split('.').pop().toLowerCase();
+  
+  // Images
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff'].includes(ext)) {
+    return { icon: ImageIcon, color: 'text-purple-400' };
   }
+  // Videos
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'wmv', 'flv', 'm4v'].includes(ext)) {
+    return { icon: VideoIcon, color: 'text-rose-400' };
+  }
+  // Audio
+  if (['mp3', 'wav', 'flac', 'm4a', 'ogg', 'aac', 'wma'].includes(ext)) {
+    return { icon: Music, color: 'text-emerald-400' };
+  }
+  // Archives
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'].includes(ext)) {
+    return { icon: Archive, color: 'text-amber-400' };
+  }
+  // Documents
+  if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'rtf', 'csv'].includes(ext)) {
+    return { icon: FileText, color: 'text-blue-400' };
+  }
+  
+  return { icon: FileIcon, color: 'text-zinc-400' };
 };
 
 const isImageFile = (name) => {
@@ -97,7 +115,7 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
       <div className="flex-1 overflow-auto p-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {files.map((item, idx) => {
-            const { icon: Icon, color } = getFileIcon(item.category, item.type);
+            const { icon: Icon, color } = getFileIcon(item.name, item.type);
             const isFolder = item.type === 'folder';
             const selected = !isFolder && isSelected(item);
             const isImage = !isFolder && isImageFile(item.name);
@@ -203,7 +221,7 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
         </thead>
         <tbody className={`divide-y ${theme === 'light' ? 'divide-gray-100' : 'divide-white/5'}`}>
           {files.map((item, idx) => {
-            const { icon: Icon, color } = getFileIcon(item.category, item.type);
+            const { icon: Icon, color } = getFileIcon(item.name, item.type);
             const isFolder = item.type === 'folder';
             const isPreviewable = !isFolder && canPreview(item.name);
             const selected = !isFolder && isSelected(item);
