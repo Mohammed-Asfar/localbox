@@ -7,6 +7,12 @@ A self-hosted file storage and management application with a modern, Mac-like in
 ## 📸 Screenshots
 
 <p align="center">
+  <img src="./screenshots/oldlaptop.jpg" alt="LocalBox on Old Laptop" width="70%" />
+</p>
+
+<p align="center"><em>LocalBox running on a repurposed old laptop as a home server</em></p>
+
+<p align="center">
   <img src="./screenshots/dashboard.png" alt="Dashboard" width="90%" />
 </p>
 
