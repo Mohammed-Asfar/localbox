@@ -14,7 +14,7 @@ const CATEGORIES = [
   { id: 'others', label: 'Others', icon: Folder },
 ];
 
-function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, currentPath }) {
+function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, currentPath, droppedFiles }) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedPath, setSelectedPath] = useState('');
   const [folders, setFolders] = useState([]);
@@ -52,6 +52,26 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       loadFolders(cat);
     }
   }, [isOpen, currentCategory, currentPath]);
+
+  // Add dropped files to Uppy when modal opens
+  useEffect(() => {
+    if (isOpen && droppedFiles && droppedFiles.length > 0) {
+      // Convert FileList to array and add each file to Uppy
+      Array.from(droppedFiles).forEach(file => {
+        try {
+          uppy.addFile({
+            name: file.name,
+            type: file.type,
+            data: file,
+            source: 'dropped',
+          });
+        } catch (err) {
+          // File might already exist, ignore
+          console.log('Could not add file:', err.message);
+        }
+      });
+    }
+  }, [isOpen, droppedFiles, uppy]);
 
   const loadFolders = async (category) => {
     try {

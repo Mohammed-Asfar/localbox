@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -29,6 +29,7 @@ function App() {
   
   // Drag & Drop State
   const [isDragging, setIsDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState(null);
   
   // UI State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -123,19 +124,30 @@ function App() {
     return result;
   }, [files, searchQuery, sortBy, sortOrder]);
 
-  // Drag & Drop Handlers
-  const handleDragOver = (e) => {
+  // Drag & Drop Handlers - use counter to prevent flicker on child elements
+  const dragCounter = useRef(0);
+  
+  const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.currentTarget === e.target) {
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
       setIsDragging(false);
     }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDrop = (e) => {
@@ -143,7 +155,9 @@ function App() {
     e.stopPropagation();
     setIsDragging(false);
     
-    if (e.dataTransfer.files?.length > 0) {
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles?.length > 0) {
+      setDroppedFiles(droppedFiles);
       setIsUploadOpen(true);
     }
   };
@@ -311,9 +325,10 @@ function App() {
           ? 'bg-gray-100 text-gray-900' 
           : 'bg-black text-zinc-200'
       }`}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDrop={(e) => { dragCounter.current = 0; handleDrop(e); }}
     >
       <Sidebar 
         currentCategory={currentCategory} 
@@ -384,10 +399,11 @@ function App() {
       {/* Modals */}
       <FileUpload 
         isOpen={isUploadOpen} 
-        onClose={() => setIsUploadOpen(false)}
+        onClose={() => { setIsUploadOpen(false); setDroppedFiles(null); }}
         onUploadComplete={handleUploadComplete}
         currentCategory={currentCategory}
         currentPath={currentPath}
+        droppedFiles={droppedFiles}
       />
 
       <DeleteModal 
