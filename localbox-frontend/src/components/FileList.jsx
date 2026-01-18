@@ -36,7 +36,7 @@ const isImageFile = (name) => {
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
 };
 
-function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, onMove, selectedFiles, onSelectionChange, onNavigateFolder, viewMode, theme }) {
+function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, onMove, onMoveFolder, selectedFiles, onSelectionChange, onNavigateFolder, viewMode, theme }) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '—';
     const k = 1024;
@@ -57,6 +57,17 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
     const a = document.createElement('a');
     a.href = url;
     a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleFolderDownload = (e, folder) => {
+    e.stopPropagation();
+    const url = `/api/download-folder/${folder.category}/${encodeURIComponent(folder.path || folder.name)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${folder.name}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -170,6 +181,18 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                       <button
                         onClick={(e) => handleDownload(e, item)}
                         className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg"
+                      >
+                        <Download className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  {/* Folder Actions */}
+                  {isFolder && (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        onClick={(e) => handleFolderDownload(e, item)}
+                        className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg"
+                        title="Download as ZIP"
                       >
                         <Download className="w-3 h-3" />
                       </button>
@@ -308,6 +331,25 @@ function FileList({ files, isLoading, onDelete, onRefresh, onPreview, onRename, 
                           onClick={(e) => handleDownload(e, item)}
                           className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
                           title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                    {/* Folder-specific actions */}
+                    {isFolder && (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onMoveFolder?.(item); }}
+                          className="hidden md:block p-1.5 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg"
+                          title="Move Folder"
+                        >
+                          <FolderInput className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleFolderDownload(e, item)}
+                          className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
+                          title="Download as ZIP"
                         >
                           <Download className="w-4 h-4" />
                         </button>

@@ -496,6 +496,82 @@ app.get('/api/folders/:category', (req, res) => {
     res.json({ folders });
 });
 
+// API: Download folder as ZIP
+app.get('/api/download-folder/:category/*', async (req, res) => {
+    const archiver = require('archiver');
+    const category = req.params.category;
+    const folderPath = req.params[0] || '';
+    const fullPath = path.join(STORAGE_DIR, category, folderPath);
+
+    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
+        return res.status(404).json({ error: 'Folder not found' });
+    }
+
+    const folderName = path.basename(folderPath) || category;
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 5 } });
+    
+    archive.on('error', (err) => {
+        console.error('Archive error:', err);
+        res.status(500).json({ error: 'Failed to create ZIP' });
+    });
+
+    archive.pipe(res);
+    archive.directory(fullPath, folderName);
+    archive.finalize();
+    
+    console.log(`📦 Downloading folder as ZIP: ${category}/${folderPath}`);
+});
+
+// API: Move folder
+app.patch('/api/folders/:category/*/move', async (req, res) => {
+    const category = req.params.category;
+    const folderPath = req.params[0] || '';
+    const { newCategory, targetPath } = req.body;
+
+    if (!newCategory) {
+        return res.status(400).json({ error: 'New category is required' });
+    }
+
+    const sourcePath = path.join(STORAGE_DIR, category, folderPath);
+    const folderName = path.basename(folderPath);
+    
+    if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isDirectory()) {
+        return res.status(404).json({ error: 'Folder not found' });
+    }
+
+    // Determine destination
+    let destDir = path.join(STORAGE_DIR, newCategory);
+    if (targetPath) {
+        destDir = path.join(destDir, targetPath);
+    }
+    
+    const destPath = path.join(destDir, folderName);
+
+    // Check if destination already exists
+    if (fs.existsSync(destPath)) {
+        return res.status(409).json({ error: 'A folder with this name already exists at destination' });
+    }
+
+    // Ensure destination directory exists
+    if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    try {
+        // Move the folder (rename works across same filesystem)
+        fs.renameSync(sourcePath, destPath);
+        console.log(`📁 Moved folder: ${category}/${folderPath} -> ${newCategory}/${targetPath || ''}/${folderName}`);
+        res.json({ success: true, message: 'Folder moved successfully' });
+    } catch (error) {
+        console.error('Error moving folder:', error);
+        res.status(500).json({ error: 'Failed to move folder' });
+    }
+});
+
 // Get local IP address
 function getLocalIP() {
     const os = require('os');
