@@ -34,15 +34,8 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       chunkSize: 100 * 1024 * 1024,
       removeFingerprintOnSuccess: true,
       storeFingerprintForResuming: true,
-      // Include relativePath in upload metadata for folder uploads
-      onBeforeRequest: (req, file) => {
-        const relativePath = file.meta.relativePath || '';
-        if (relativePath) {
-          req.setHeader('Upload-Metadata', 
-            req.getHeader('Upload-Metadata') + `,relativePath ${btoa(relativePath)}`
-          );
-        }
-      }
+      // Allow relativePath in metadata for folder uploads
+      allowedMetaFields: ['name', 'type', 'relativePath', 'category', 'uploadPath'],
     });
   });
 

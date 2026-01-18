@@ -279,6 +279,26 @@ function App() {
     }
   };
 
+  // Move Folder
+  const [moveFolderModal, setMoveFolderModal] = useState({ open: false, folder: null });
+
+  const handleMoveFolderConfirm = async (newCategory, targetPath = '') => {
+    setIsProcessing(true);
+    try {
+      await axios.patch(
+        `${API_BASE}/folders/${moveFolderModal.folder.category}/${encodeURIComponent(moveFolderModal.folder.path || moveFolderModal.folder.name)}/move`,
+        { newCategory, targetPath }
+      );
+      await fetchData(currentCategory, currentPath);
+      setMoveFolderModal({ open: false, folder: null });
+    } catch (error) {
+      console.error('Move folder failed:', error);
+      alert(error.response?.data?.error || 'Failed to move folder');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Create Folder
   const handleCreateFolder = async (name) => {
     setIsProcessing(true);
@@ -373,6 +393,7 @@ function App() {
           onPreview={(file) => setPreviewFile(file)}
           onRename={handleRenameRequest}
           onMove={handleMoveRequest}
+          onMoveFolder={(folder) => setMoveFolderModal({ open: true, folder })}
           selectedFiles={selectedFiles}
           onSelectionChange={setSelectedFiles}
           onNavigateFolder={handleNavigateFolder}
@@ -436,6 +457,15 @@ function App() {
         isLoading={isProcessing}
         onConfirm={handleMoveConfirm}
         onCancel={() => setMoveModal({ open: false, file: null, isBulk: false })}
+      />
+
+      {/* Move Folder Modal */}
+      <MoveModal
+        isOpen={moveFolderModal.open}
+        file={moveFolderModal.folder ? { name: moveFolderModal.folder.name, category: moveFolderModal.folder.category } : null}
+        isLoading={isProcessing}
+        onConfirm={handleMoveFolderConfirm}
+        onCancel={() => setMoveFolderModal({ open: false, folder: null })}
       />
 
       <CreateFolderModal
