@@ -64,7 +64,7 @@ A self-hosted file storage and management application with a modern, Mac-like in
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/localbox.git
+git clone https://github.com/Mohammed-Asfar/localbox.git
 cd localbox
 
 # Install backend dependencies
