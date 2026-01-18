@@ -3,7 +3,7 @@ import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
 import axios from 'axios';
-import { X, Zap, Folder, ChevronDown, ChevronRight, Image, FileText, Archive, Video, Music } from 'lucide-react';
+import { X, Zap, Folder, FolderUp, ChevronDown, ChevronRight, Image, FileText, Archive, Video, Music } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'images', label: 'Images', icon: Image },
@@ -34,6 +34,15 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
       chunkSize: 100 * 1024 * 1024,
       removeFingerprintOnSuccess: true,
       storeFingerprintForResuming: true,
+      // Include relativePath in upload metadata for folder uploads
+      onBeforeRequest: (req, file) => {
+        const relativePath = file.meta.relativePath || '';
+        if (relativePath) {
+          req.setHeader('Upload-Metadata', 
+            req.getHeader('Upload-Metadata') + `,relativePath ${btoa(relativePath)}`
+          );
+        }
+      }
     });
   });
 
@@ -288,11 +297,51 @@ function FileUpload({ isOpen, onClose, onUploadComplete, currentCategory, curren
           <Dashboard
             uppy={uppy}
             width="100%"
-            height={350}
+            height={300}
             theme="dark"
             showProgressDetails={true}
             proudlyDisplayPoweredByUppy={false}
           />
+          
+          {/* Folder Upload Button */}
+          <div className="p-3 border-t border-white/5 flex justify-center">
+            <input
+              type="file"
+              id="folder-upload"
+              webkitdirectory=""
+              directory=""
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  Array.from(files).forEach(file => {
+                    try {
+                      uppy.addFile({
+                        name: file.name,
+                        type: file.type,
+                        data: file,
+                        source: 'folder-upload',
+                        meta: {
+                          relativePath: file.webkitRelativePath || file.name
+                        }
+                      });
+                    } catch (err) {
+                      console.log('Could not add file:', err.message);
+                    }
+                  });
+                }
+                e.target.value = ''; // Reset for next selection
+              }}
+            />
+            <label
+              htmlFor="folder-upload"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg cursor-pointer transition-colors text-sm font-medium"
+            >
+              <FolderUp className="w-4 h-4" />
+              Upload Folder
+            </label>
+          </div>
         </div>
       </div>
     </div>

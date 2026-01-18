@@ -46,14 +46,26 @@ const tusServer = new Server({
             // Check if user specified category and path
             const userCategory = metadata.category;
             const userPath = metadata.uploadPath || '';
+            // Get relativePath from folder uploads (e.g., "MyFolder/SubFolder/file.txt")
+            const relativePath = metadata.relativePath || '';
 
             let result;
 
             if (userCategory && getCategories().includes(userCategory)) {
                 // User specified a valid category - move to that location
-                const targetDir = userPath 
+                let targetDir = userPath 
                     ? path.join(STORAGE_DIR, userCategory, userPath)
                     : path.join(STORAGE_DIR, userCategory);
+
+                // If relativePath exists (folder upload), append the folder structure
+                if (relativePath) {
+                    // relativePath is like "FolderName/SubFolder/filename.ext"
+                    // We need the directory part only
+                    const relativeDir = path.dirname(relativePath);
+                    if (relativeDir && relativeDir !== '.') {
+                        targetDir = path.join(targetDir, relativeDir);
+                    }
+                }
 
                 // Ensure target directory exists
                 if (!fs.existsSync(targetDir)) {
